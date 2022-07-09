@@ -1,0 +1,15 @@
+{
+  "log": {
+    "level":"debug",
+    "path": "./logs",
+    "filename": "server"
+  },
+  "db": {
+    "driver": "mysql",
+    "username": "root",
+    "password": "root",
+    "host": "127.0.0.1",
+    "port": 3306,
+    "database":"go_search"
+  }
+}
