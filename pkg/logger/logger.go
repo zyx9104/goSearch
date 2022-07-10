@@ -80,6 +80,14 @@ func Init() error {
 		logrus.PanicLevel: Writer,
 	}, fileFormatter)
 	Log.AddHook(lfHook)
-	return nil
 
+	return nil
+}
+
+func Infoln(args ...interface{}) {
+	Log.Infoln(args...)
+}
+
+func Infof(format string, args ...interface{}) {
+	Log.Infof(format, args...)
 }

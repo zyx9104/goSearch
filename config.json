@@ -7,9 +7,10 @@
   "db": {
     "driver": "mysql",
     "username": "root",
-    "password": "root",
+    "password": "rootroot",
     "host": "127.0.0.1",
-    "port": 3306,
-    "database":"go_search"
+    "port": 53306,
+    "database":"go_search",
+    "args": "charset=utf8&parseTime=True&loc=Local"
   }
 }
