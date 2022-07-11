@@ -1,6 +1,6 @@
 package model
 
 type SliceItem struct {
-	Id    uint32
+	Id    uint64
 	Score float32
 }

@@ -2,6 +2,7 @@ package logger
 
 import (
 	"errors"
+
 	rotateLogs "github.com/lestrrat/go-file-rotatelogs"
 	"github.com/rifflock/lfshook"
 
@@ -84,10 +85,50 @@ func Init() error {
 	return nil
 }
 
+func Info(args ...interface{}) {
+	Log.Info(args...)
+}
+
 func Infoln(args ...interface{}) {
 	Log.Infoln(args...)
 }
 
 func Infof(format string, args ...interface{}) {
 	Log.Infof(format, args...)
+}
+
+func Debug(args ...interface{}) {
+	Log.Debug(args...)
+}
+
+func Debugln(args ...interface{}) {
+	Log.Debugln(args...)
+}
+
+func Debugf(format string, args ...interface{}) {
+	Log.Debugf(format, args...)
+}
+
+func Warn(args ...interface{}) {
+	Log.Warn(args...)
+}
+
+func Warnln(args ...interface{}) {
+	Log.Warnln(args...)
+}
+
+func Warnf(format string, args ...interface{}) {
+	Log.Warnf(format, args...)
+}
+
+func Fatal(args ...interface{}) {
+	Log.Fatal(args...)
+}
+
+func Fatalln(args ...interface{}) {
+	Log.Fatalln(args...)
+}
+
+func Fatalf(format string, args ...interface{}) {
+	Log.Fatalf(format, args...)
 }

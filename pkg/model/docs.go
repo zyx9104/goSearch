@@ -7,9 +7,9 @@ import (
 type Doc struct {
 	gorm.Model
 	//FavoriteId uint
-	//DocIndex uint
-	Url     string
-	Summary string
+	Hash uint64
+	Url  string
+	Text string
 }
 
 func (*Doc) TableName() string {

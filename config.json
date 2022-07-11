@@ -1,6 +1,6 @@
 {
   "log": {
-    "level":"debug",
+    "level": "debug",
     "path": "./logs",
     "filename": "server"
   },
@@ -9,8 +9,8 @@
     "username": "root",
     "password": "rootroot",
     "host": "127.0.0.1",
-    "port": 53306,
-    "database":"go_search",
-    "args": "charset=utf8&parseTime=True&loc=Local"
+    "port": 63306,
+    "database": "go_search",
+    "args": "charset=utf8mb4&parseTime=True&loc=Local"
   }
 }
