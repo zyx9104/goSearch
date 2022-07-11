@@ -1,7 +1,7 @@
 package model
 
-type IndexDoc struct {
-	ID   uint64 `json:"id,omitempty"`
+type DocIndex struct {
+	ID   uint32 `json:"id,omitempty"`
 	Text string `json:"text,omitempty"`
 	Url  string `json:"url,omitempty"`
 }
@@ -14,13 +14,13 @@ type StorageIndexDoc struct {
 
 // StorageId leveldb中的Ids存储对象
 type StorageId struct {
-	ID    uint64
+	ID    uint32
 	Score float32
 }
 
-type KeyIndex struct {
+type InvIndex struct {
 	KeyValue uint64
-	ID       uint64
+	ID       []uint32
 }
 
 type WordMap struct {
@@ -29,18 +29,18 @@ type WordMap struct {
 }
 
 type ResponseDoc struct {
-	IndexDoc
+	DocIndex
 	Score float32 `json:"score,omitempty"` //得分
 
 }
 
-type ResponseUrl struct {
-	ThumbnailUrl string  `json:"thumbnailUrl,omitempty"`
-	Url          string  `json:"url,omitempty"`
-	ID           uint64  `json:"id,omitempty"`
-	Text         string  `json:"text,omitempty"`
-	Score        float32 `json:"score,omitempty"`
-}
+// type ResponseUrl struct {
+// 	ThumbnailUrl string  `json:"thumbnailUrl,omitempty"`
+// 	Url          string  `json:"url,omitempty"`
+// 	ID           uint64  `json:"id,omitempty"`
+// 	Text         string  `json:"text,omitempty"`
+// 	Score        float32 `json:"score,omitempty"`
+// }
 
 type RemoveIndexModel struct {
 	ID uint64 `json:"id,omitempty"`

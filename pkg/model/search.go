@@ -47,12 +47,12 @@ type SearchResult struct {
 	Words     []string      `json:"words,omitempty"`     //搜索关键词
 }
 
-type SearchPictureResult struct {
-	Time      float32       `json:"time,omitempty"`      //查询用时
-	Total     int           `json:"total"`               //总数
-	PageCount int           `json:"pageCount"`           //总页数
-	Page      int           `json:"page,omitempty"`      //页码
-	Limit     int           `json:"limit,omitempty"`     //页大小
-	Documents []ResponseUrl `json:"documents,omitempty"` //缩略图 Url
-	Words     []string      `json:"words,omitempty"`     //搜索关键词
-}
+// type SearchPictureResult struct {
+// 	Time      float32       `json:"time,omitempty"`      //查询用时
+// 	Total     int           `json:"total"`               //总数
+// 	PageCount int           `json:"pageCount"`           //总页数
+// 	Page      int           `json:"page,omitempty"`      //页码
+// 	Limit     int           `json:"limit,omitempty"`     //页大小
+// 	Documents []ResponseUrl `json:"documents,omitempty"` //缩略图 Url
+// 	Words     []string      `json:"words,omitempty"`     //搜索关键词
+// }

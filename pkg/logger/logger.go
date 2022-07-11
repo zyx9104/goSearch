@@ -132,3 +132,15 @@ func Fatalln(args ...interface{}) {
 func Fatalf(format string, args ...interface{}) {
 	Log.Fatalf(format, args...)
 }
+
+func Panic(args ...interface{}) {
+	Log.Panic(args...)
+}
+
+func Panicln(args ...interface{}) {
+	Log.Panicln(args...)
+}
+
+func Panicf(format string, args ...interface{}) {
+	Log.Panicf(format, args...)
+}
