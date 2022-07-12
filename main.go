@@ -1,18 +1,11 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"os"
-
-	"github.com/dgraph-io/badger/v3"
 	"github.com/spf13/viper"
 	"github.com/wangbin/jiebago"
-	"github.com/z-y-x233/goSearch/pkg/db/badgerDb"
+	"github.com/z-y-x233/goSearch/pkg"
 	"github.com/z-y-x233/goSearch/pkg/logger"
-	"github.com/z-y-x233/goSearch/pkg/protobuf/pb/model"
-	"github.com/z-y-x233/goSearch/pkg/tools"
-	"google.golang.org/protobuf/proto"
+	"log"
 )
 
 var (
@@ -93,31 +86,8 @@ func print(ch <-chan string) (ss []string) {
 }
 
 func main() {
-	// logger.Debug("start")
-	// pkg.ParseData()
-	options := badger.DefaultOptions(fmt.Sprintf("%s_%d", viper.GetString("db.doc_dir")+string(os.PathSeparator)+viper.GetString("db.doc_name"), 0))
-	dbi := badgerDb.Open(options)
-	defer dbi.Close()
+	logger.Info("start")
+	pkg.ParseData()
+	logger.Info("done")
 
-	docc := &model.DocIndex{Id: 1, Url: "sss.pp", Text: "test db proto"}
-	logger.Debug(docc)
-
-	buf, err := proto.Marshal(docc)
-	if err != nil {
-		logger.Fatal(err)
-	}
-	logger.Debug(buf)
-
-	dbi.Set(tools.U32ToBytes(docc.Id), buf)
-	obj, found := dbi.Get(tools.U32ToBytes(docc.Id))
-
-	if !found {
-		logger.Debug("not found key 0")
-	}
-	doc := &model.DocIndex{}
-	err = proto.Unmarshal(obj, doc)
-	if err != nil {
-		logger.Fatal(err)
-	}
-	logger.Debug(doc)
 }
