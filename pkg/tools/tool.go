@@ -3,11 +3,11 @@ package tools
 import (
 	"bytes"
 	"compress/flate"
+	"encoding/binary"
 	"encoding/csv"
 	"encoding/gob"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"time"
 
@@ -38,33 +38,42 @@ func init() {
 	args = viper.GetString("db.args")
 }
 
-func StrTo64(str string) uint64 {
+func Str2Uint64(str string) uint64 {
 	hash := murmur3.Sum64([]byte(str))
 	return hash
 }
 
+func U32ToBytes(key uint32) []byte {
+	var buf = make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, key)
+	return buf
+}
+
+//ReadCsv return [[url, text], ...]
 func ReadCsv(filepath string) [][]string {
 	opencast, err := os.Open(filepath)
 	if err != nil {
-		log.Println("csv文件打开失败！")
+		logger.Panicln(filepath, err)
 	}
 	defer opencast.Close()
 
 	logger.Debug("load:", filepath)
 	//创建csv读取接口实例
 	ReadCsv := csv.NewReader(opencast)
+	// ReadCsv.Comma = ' '
+	// ReadCsv.FieldsPerRecord = -1
 	ReadCsv.Read()
 	//读取所有内容
 	ReadAll, err := ReadCsv.ReadAll() //返回切片类型：[[s s ds] [a a a]]
 	if err != nil {
-		logger.Log.Fatal(err)
+		logger.Panicln(filepath, err)
 	}
 	return ReadAll
 }
 
 func parseData(line []string, docs []model.Doc) []model.Doc {
 
-	h1 := StrTo64(line[0])
+	h1 := Str2Uint64(line[0])
 	docs = append(docs, model.Doc{Hash: h1, Url: line[0], Text: line[1]})
 	if len(docs) >= 5000 {
 		rs := Db.Create(&docs)

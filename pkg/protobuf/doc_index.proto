@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package model;
+
+option go_package="./model";
+
+message DocIndex {
+    uint32 id = 1;
+    string text = 2;
+    string url = 3;
+
+}

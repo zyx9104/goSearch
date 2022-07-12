@@ -1,0 +1,10 @@
+go run main.go 25 50
+go run main.go 50 75
+go run main.go 75 100
+go run main.go 100 125
+go run main.go 125 150
+go run main.go 150 175
+go run main.go 175 200
+go run main.go 200 225
+go run main.go 225 250
+go run main.go 250 256

@@ -11,6 +11,9 @@
     "host": "127.0.0.1",
     "port": 63306,
     "database": "go_search",
-    "args": "charset=utf8mb4&parseTime=True&loc=Local"
+    "args": "charset=utf8mb4&parseTime=True&loc=Local",
+    "doc_dir": "./pkg/data/doc",
+    "doc_name": "doc",
+    "inv_index_name": "key_doc"
   }
 }
