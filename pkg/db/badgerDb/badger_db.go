@@ -36,6 +36,28 @@ func Open(option badger.Options) *BadgerDb {
 	}
 }
 
+func (b *BadgerDb) GetKeys() (keys [][]byte, er error) {
+
+	err := b.db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			k := item.Key()
+			keys = append(keys, k)
+		}
+		return nil
+	})
+
+	if err != nil {
+		log.Println("Failed to iterator keys from the cache.", "error", err)
+		return nil, err
+	}
+	return keys, nil
+}
+
 // Get if not find bool will return false
 func (b *BadgerDb) Get(key []byte) ([]byte, bool) {
 	result := make([]byte, 0)

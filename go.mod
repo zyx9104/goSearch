@@ -12,7 +12,7 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/wangbin/jiebago v0.3.2
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
-	google.golang.org/protobuf v1.26.0
+	google.golang.org/protobuf v1.28.0
 	gorm.io/driver/mysql v1.3.4
 	gorm.io/gorm v1.23.8
 )
@@ -47,6 +47,7 @@ require (
 	github.com/onsi/gomega v1.19.0 // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/shirou/gopsutil v2.21.11+incompatible // indirect
 	github.com/spf13/afero v1.1.2 // indirect
 	github.com/spf13/cast v1.3.0 // indirect
 	github.com/spf13/jwalterweatherman v1.0.0 // indirect

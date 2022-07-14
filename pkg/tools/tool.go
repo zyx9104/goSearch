@@ -2,12 +2,10 @@ package tools
 
 import (
 	"bytes"
-	"compress/flate"
+	"compress/gzip"
 	"encoding/binary"
 	"encoding/csv"
-	"encoding/gob"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -46,6 +44,12 @@ func Str2Uint64(str string) uint64 {
 func U32ToBytes(key uint32) []byte {
 	var buf = make([]byte, 4)
 	binary.BigEndian.PutUint32(buf, key)
+	return buf
+}
+
+func U64ToBytes(key uint64) []byte {
+	var buf = make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, key)
 	return buf
 }
 
@@ -118,95 +122,47 @@ func ExecTime(fn func()) float64 {
 	return tc / 1e6
 }
 
-// Write 写入二进制数据到磁盘文件
-func Write(data interface{}, filename string) {
-	buffer := new(bytes.Buffer)
-	encoder := gob.NewEncoder(buffer)
-	err := encoder.Encode(data)
+//Encode 压缩[]byte
+func Encode(input []byte) ([]byte, error) {
+	// 创建一个新的 byte 输出流
+	var buf bytes.Buffer
+	// 创建一个新的 gzip 输出流
+	gzipWriter := gzip.NewWriter(&buf)
+	// 将 input byte 数组写入到此输出流中
+	_, err := gzipWriter.Write(input)
 	if err != nil {
-		logger.Panic(err)
+		_ = gzipWriter.Close()
+		return nil, err
 	}
-
-	logger.Debug("Write:", filename)
-	compressData := Compression(buffer.Bytes())
-	err = ioutil.WriteFile(filename, compressData, 0600)
-	if err != nil {
-		logger.Panic(err)
+	if err := gzipWriter.Close(); err != nil {
+		return nil, err
 	}
+	// 返回压缩后的 bytes 数组
+	return buf.Bytes(), nil
 }
 
-func Encoder(data interface{}) []byte {
-	if data == nil {
-		return nil
-	}
-	buffer := new(bytes.Buffer)
-	encoder := gob.NewEncoder(buffer)
-	err := encoder.Encode(data)
+//Decode 解压[]byte
+func Decode(input []byte) ([]byte, error) {
+	// 创建一个新的 gzip.Reader
+	bytesReader := bytes.NewReader(input)
+	gzipReader, err := gzip.NewReader(bytesReader)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return buffer.Bytes()
-}
-
-func Decoder(data []byte, v interface{}) {
-	if data == nil {
-		return
-	}
-	buffer := bytes.NewBuffer(data)
-	decoder := gob.NewDecoder(buffer)
-	err := decoder.Decode(v)
-	if err != nil {
-		panic(err)
-	}
-}
-
-// Compression 压缩数据
-func Compression(data []byte) []byte {
-
+	defer func() {
+		// defer 中关闭 gzipReader
+		_ = gzipReader.Close()
+	}()
 	buf := new(bytes.Buffer)
-	write, err := flate.NewWriter(buf, flate.DefaultCompression)
+	// 从 Reader 中读取出数据
+	if _, err := buf.ReadFrom(gzipReader); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func HandleError(err error) {
 	if err != nil {
 		logger.Panic(err)
-	}
-	defer write.Close()
-
-	write.Write(data)
-	write.Flush()
-	logger.Debug("原大小：", len(data), "压缩后大小：", buf.Len(), "压缩率：", fmt.Sprintf("%.2f", float32(buf.Len())*100/float32(len(data))), "%")
-	return buf.Bytes()
-}
-
-//Decompression 解压缩数据
-func Decompression(data []byte) []byte {
-	return DecompressionBuffer(data).Bytes()
-}
-
-func DecompressionBuffer(data []byte) *bytes.Buffer {
-	buf := new(bytes.Buffer)
-	read := flate.NewReader(bytes.NewReader(data))
-	defer read.Close()
-
-	buf.ReadFrom(read)
-	return buf
-}
-
-// Read 从磁盘文件加载二进制数据
-func Read(data interface{}, filename string) {
-	raw, err := ioutil.ReadFile(filename)
-	if err != nil {
-		if os.IsNotExist(err) {
-			//忽略
-			return
-		}
-		logger.Debug(err)
-	}
-	//解压
-	decoData := Decompression(raw)
-
-	buffer := bytes.NewBuffer(decoData)
-	dec := gob.NewDecoder(buffer)
-	err = dec.Decode(data)
-	if err != nil {
-		logger.Debug("Decode Error: ", err, "buffer.Bytes() is :", buffer.Bytes())
 	}
 }

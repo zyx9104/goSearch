@@ -1,11 +1,15 @@
 package main
 
 import (
+	"log"
+
 	"github.com/spf13/viper"
 	"github.com/wangbin/jiebago"
+
+	// "github.com/z-y-x233/goSearch/pkg"
+
 	"github.com/z-y-x233/goSearch/pkg"
 	"github.com/z-y-x233/goSearch/pkg/logger"
-	"log"
 )
 
 var (
@@ -27,7 +31,6 @@ func init() {
 		log.Fatal("init logger failed:", err)
 
 	}
-
 	wordFilterMap = make(map[string]bool)
 	wordFilterMap["了"] = true
 	wordFilterMap["的"] = true
@@ -86,8 +89,19 @@ func print(ch <-chan string) (ss []string) {
 }
 
 func main() {
-	logger.Info("start")
-	pkg.ParseData()
-	logger.Info("done")
+	logger.Info("========================================start========================================")
+	// s, _ := strconv.Atoi(os.Args[1])
+	// e, _ := strconv.Atoi(os.Args[2])
+	// s, e := 1, 100
+	// logger.Infoln("start", s, "end", e)
+	// pkg.ParseData(1, 1000000)
+	// pkg.BuildInvIdx(s, e)
+	// pkg.MergeIndex(0, 1)
+	// pkg.Init()
+	pkg.Init()
+
+	// pkg.EncodeData()
+	pkg.BoltTest()
+	logger.Info("========================================done========================================")
 
 }

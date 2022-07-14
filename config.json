@@ -1,6 +1,7 @@
 {
   "log": {
-    "level": "debug",
+    "debug": true,
+    "level": "info",
     "path": "./logs",
     "filename": "server"
   },
@@ -12,8 +13,21 @@
     "port": 63306,
     "database": "go_search",
     "args": "charset=utf8mb4&parseTime=True&loc=Local",
-    "doc_dir": "./pkg/data/doc",
-    "doc_name": "doc",
-    "inv_index_name": "key_doc"
+    "doc": {
+      "dir": "./pkg/data/doc",
+      "filename": "doc.db",
+      "bolt": "bolt_doc.db",
+      "encodeFile": "en_doc"
+    },
+    "invIndex": {
+      "dir": "./pkg/data/inv",
+      "dstdir": "./pkg/db/inv",
+      "dstfile": "key_doc",
+      "filename1": "key_doc.db",
+      "filename2": "key_doc2.db",
+      "filename3": "key_doc3.db",
+      "filename4": "key_doc4.db"
+    },
+    "last_index": 101483886
   }
 }

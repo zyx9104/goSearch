@@ -69,6 +69,16 @@ func (s *BoltDb) Set(key []byte, value []byte, bucketName []byte) error {
 	return err
 }
 
+func (s *BoltDb) MulSet(key []byte, value []byte, bucketName []byte) error {
+	err := s.db.Batch(func(tx *bolt.Tx) error {
+		b := tx.Bucket(bucketName)
+		err := b.Put(key, value)
+		return err
+	})
+
+	return err
+}
+
 // Delete 删除
 func (s *BoltDb) Delete(key []byte, bucketName []byte) error {
 	err := s.db.Update(func(tx *bolt.Tx) error {

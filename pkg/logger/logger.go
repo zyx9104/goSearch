@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"bufio"
 	"errors"
 
 	rotateLogs "github.com/lestrrat/go-file-rotatelogs"
@@ -18,7 +19,7 @@ import (
 
 var (
 	Log   *logrus.Logger
-	level = map[string]logrus.Level{
+	Level = map[string]logrus.Level{
 		"":      logrus.DebugLevel,
 		"panic": logrus.PanicLevel,
 		"fatal": logrus.FatalLevel,
@@ -35,6 +36,7 @@ func Init() error {
 	logPath := viper.GetString("log.path")
 	logLevel := viper.GetString("log.level")
 	logFilename := viper.GetString("log.filename")
+	debug := viper.GetBool("log.debug")
 	Log = logrus.New()
 
 	//配置控制台日志
@@ -42,9 +44,15 @@ func Init() error {
 	formatter.FullTimestamp = true
 	formatter.TimestampFormat = "2006-01-02 15:04:05"
 
+	ff, _ := os.OpenFile(os.DevNull, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+	output := bufio.NewWriter(ff)
+	if debug {
+		Log.SetOutput(os.Stderr)
+	} else {
+		Log.SetOutput(output)
+	}
 	Log.SetFormatter(formatter)
-	Log.SetOutput(os.Stderr)
-	Log.SetLevel(level[logLevel])
+	Log.SetLevel(Level[logLevel])
 
 	//配置文件日志
 	_, err := os.Stat(logPath)
@@ -55,12 +63,14 @@ func Init() error {
 		}
 	}
 
-	baseLogPath := path.Join(logPath, logFilename)
+	cwd, _ := os.Getwd()
+	baseLogPath := path.Join(cwd, "logs", logFilename)
+	linkName := path.Join(cwd, "logs", logFilename+".log")
 	Writer, err = rotateLogs.New(
 		baseLogPath+"_%Y%m%d%H%M.log",
-		rotateLogs.WithLinkName(baseLogPath),      // 生成软链，指向最新日志文件
-		rotateLogs.WithMaxAge(7*24*time.Hour),     // 文件最大保存时间
-		rotateLogs.WithRotationTime(24*time.Hour), // 日志切割时间间隔
+		rotateLogs.WithLinkName(linkName),         // 生成软链，指向最新日志文件
+		rotateLogs.WithMaxAge(12*30*24*time.Hour), // 文件最大保存时间
+		rotateLogs.WithRotationTime(time.Hour),    // 日志切割时间间隔
 	)
 
 	if err != nil {
@@ -71,6 +81,7 @@ func Init() error {
 	fileFormatter.FullTimestamp = true
 	fileFormatter.TimestampFormat = "2006-01-02 15:04:05"
 	fileFormatter.DisableColors = true
+	fileFormatter.ForceFormatting = true
 
 	lfHook := lfshook.NewHook(lfshook.WriterMap{
 		logrus.DebugLevel: Writer, // 为不同级别设置不同的输出目的
@@ -81,7 +92,6 @@ func Init() error {
 		logrus.PanicLevel: Writer,
 	}, fileFormatter)
 	Log.AddHook(lfHook)
-
 	return nil
 }
 

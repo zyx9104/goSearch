@@ -19,8 +19,7 @@ type StorageId struct {
 }
 
 type InvIndex struct {
-	KeyValue uint64
-	ID       []uint32
+	ID []uint32
 }
 
 type WordMap struct {
