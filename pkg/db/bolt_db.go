@@ -1,4 +1,4 @@
-package boltDb
+package db
 
 import (
 	"github.com/boltdb/bolt"
@@ -9,8 +9,9 @@ type BoltDb struct {
 	path string
 }
 
-func Open(path string) (*BoltDb, error) {
-	db, err := bolt.Open(path, 0600, nil)
+func Open(path string, readOnly bool) (*BoltDb, error) {
+	db, err := bolt.Open(path, 0600, &bolt.Options{ReadOnly: readOnly})
+
 	if err != nil {
 		return nil, err
 	}
@@ -56,6 +57,9 @@ func (s *BoltDb) Get(key []byte, bucketName []byte) ([]byte, bool) {
 	if err != nil {
 		return nil, false
 	}
+	if buffer == nil {
+		return nil, false
+	}
 	return buffer, true
 }
 
@@ -67,6 +71,20 @@ func (s *BoltDb) Set(key []byte, value []byte, bucketName []byte) error {
 	})
 
 	return err
+}
+
+func (s *BoltDb) GetVals(bucketName []byte) (vals [][]byte, err error) {
+
+	err = s.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket(bucketName)
+		c := b.Cursor()
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			vals = append(vals, v)
+		}
+		return nil
+	})
+
+	return
 }
 
 func (s *BoltDb) MulSet(key []byte, value []byte, bucketName []byte) error {

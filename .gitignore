@@ -14,4 +14,6 @@
 .idea
 logs
 
+pkg/data/wordIdx.txt
 pkg/data/doc
+pkg/data/inv

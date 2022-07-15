@@ -2,18 +2,15 @@ package main
 
 import (
 	"log"
+	"os"
+	"time"
 
 	"github.com/spf13/viper"
-	"github.com/wangbin/jiebago"
-
-	// "github.com/z-y-x233/goSearch/pkg"
-
-	"github.com/z-y-x233/goSearch/pkg"
+	"github.com/z-y-x233/goSearch/pkg/engine"
 	"github.com/z-y-x233/goSearch/pkg/logger"
 )
 
 var (
-	seg           jiebago.Segmenter
 	wordFilterMap map[string]bool
 )
 
@@ -21,7 +18,6 @@ func init() {
 	viper.SetConfigFile("./config.json")
 	viper.AutomaticEnv()
 	err := viper.ReadInConfig()
-	seg.LoadDictionary("./pkg/data/dict.txt")
 
 	if err != nil {
 		log.Fatal("load config failed:", err)
@@ -77,6 +73,7 @@ func init() {
 	wordFilterMap["“"] = true
 	wordFilterMap["’"] = true
 	wordFilterMap[","] = true
+	engine.Init(0)
 
 }
 
@@ -92,16 +89,26 @@ func main() {
 	logger.Info("========================================start========================================")
 	// s, _ := strconv.Atoi(os.Args[1])
 	// e, _ := strconv.Atoi(os.Args[2])
-	// s, e := 1, 100
-	// logger.Infoln("start", s, "end", e)
-	// pkg.ParseData(1, 1000000)
-	// pkg.BuildInvIdx(s, e)
-	// pkg.MergeIndex(0, 1)
-	// pkg.Init()
-	pkg.Init()
+	// invID, _ := strconv.Atoi(os.Args[3])
 
-	// pkg.EncodeData()
-	pkg.BoltTest()
+	// s, e := 1, viper.GetInt("db.last_index")
+	// logger.Infoln("start", s, "end", e)
+	// gen.ParseData(1, 1000000)
+
+	// gen.BuildInvIdx(s, e)
+
+	q := os.Args[1]
+	// q := "今天星期几"
+	t := time.Now()
+	docs := engine.Query(q)
+	for i, doc := range docs {
+		if i >= 10 {
+			break
+		}
+		logger.Infoln(doc.Id, doc.Text)
+	}
+	logger.Infoln(len(docs), "docs", "search time:", time.Since(t))
+
 	logger.Info("========================================done========================================")
 
 }
