@@ -15,35 +15,14 @@
     "args": "charset=utf8mb4&parseTime=True&loc=Local",
     "doc": {
       "dir": "./pkg/data/doc",
-      "filename": "doc.db",
-      "bolt": "bolt_doc.db",
-      "encodeFile": "en_doc"
+      "bolt": "bolt_doc.db"
     },
     "invIndex": {
       "dir": "./pkg/data/inv",
-      "bolt": "bolt_key_doc.db",
-      "bolt1": "bolt_key_doc1.db",
-      "bolt2": "bolt_key_doc2.db",
-      "bolt3": "bolt_key_doc3.db",
-      "bolt4": "bolt_key_doc4.db",
-      "bolt5": "bolt_key_doc5.db",
-      "bolt6": "bolt_key_doc6.db",
-      "bolt7": "bolt_key_doc7.db",
-      "bolt8": "bolt_key_doc8.db",
-      "bolt9": "bolt_key_doc9.db",
-      "bolt10": "bolt_key_doc10.db",
-      "bolt11": "bolt_key_doc11.db",
-      "bolt12": "bolt_key_doc12.db",
-      "bolt13": "bolt_key_doc13.db",
-      "bolt14": "bolt_key_doc14.db",
-      "bolt15": "bolt_key_doc15.db",
-      "bolt16": "bolt_key_doc16.db",
-      "bolt17": "bolt_key_doc17.db",
-      "bolt18": "bolt_key_doc18.db",
-      "bolt19": "bolt_key_doc19.db",
-      "bolt20": "bolt_key_doc20.db",
-      "bolt21": "bolt_key_doc21.db"
+      "bolt": "key_doc.db"
     },
+    "dict": "./pkg/data/dict.txt",
+    "wordIds": "./pkg/data/word_ids.txt",
     "last_index": 101483886
   }
 }

@@ -11,7 +11,12 @@ message DocIndex {
 
 }
 
+message InvItem {
+    uint32 id = 1;
+    int32 cnt = 2;
+}
+
 message InvIndex {
     uint64 key = 1;
-    repeated uint32 ids = 2;
+    repeated InvItem items = 2;
 }

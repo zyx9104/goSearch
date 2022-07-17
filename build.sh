@@ -1,21 +1,36 @@
 #!/bin/bash
-go run main.go 2
-go run main.go 3
-go run main.go 4
-go run main.go 5
-go run main.go 6
-go run main.go 7
-go run main.go 8
-go run main.go 9
-go run main.go 10
-go run main.go 11
-go run main.go 12
-go run main.go 13
-go run main.go 14
-go run main.go 15
-go run main.go 16
-go run main.go 17
-go run main.go 18
-go run main.go 19
-go run main.go 20
-go run main.go 21
+
+go run main.go 5000000 10000000 1
+go run main.go 10000000 15000000 2
+go run main.go 15000000 20000000 3
+go run main.go 20000000 25000000 4 
+go run main.go 25000000 30000000 5
+go run main.go 30000000 35000000 6
+go run main.go 35000000 40000000 7
+go run main.go 40000000 45000000 8
+go run main.go 45000000 50000000 9
+go run main.go 50000000 55000000 10
+go run main.go 55000000 60000000 11
+go run main.go 60000000 65000000 12
+go run main.go 65000000 70000000 13
+go run main.go 70000000 75000000 14
+go run main.go 75000000 80000000 15
+go run main.go 80000000 85000000 16
+go run main.go 85000000 90000000 17
+go run main.go 90000000 95000000 18
+go run main.go 95000000 100000000 19
+go run main.go 100000000 101483886 20
+
+
+
+
+
+
+
+
+
+
+
+
+
+

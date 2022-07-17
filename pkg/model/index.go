@@ -1,34 +1,14 @@
 package model
 
-type DocIndex struct {
-	ID   uint32 `json:"id,omitempty"`
-	Text string `json:"text,omitempty"`
-	Url  string `json:"url,omitempty"`
-}
-
-// StorageIndexDoc 文档对象
-type StorageIndexDoc struct {
-	Text string `json:"text,omitempty"`
-	Url  string `json:"url,omitempty"`
-}
-
-// StorageId leveldb中的Ids存储对象
-type StorageId struct {
-	ID    uint32
-	Score float32
-}
-
-type InvIndex struct {
-	ID []uint32
-}
-
 type WordMap struct {
 	Map map[uint64]float32
 	Len int
 }
 
 type ResponseDoc struct {
-	DocIndex
+	Id    uint32  `json:"id,omitempty"`
+	Text  string  `json:"text,omitempty"`
+	Url   string  `json:"url,omitempty"`
 	Score float32 `json:"score,omitempty"` //得分
 
 }

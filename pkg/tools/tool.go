@@ -7,6 +7,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/spaolacci/murmur3"
@@ -161,8 +162,32 @@ func Decode(input []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func HandleError(err error) {
+func HandleError(msg string, err error) {
 	if err != nil {
-		logger.Panic(err)
+		logger.Panicln(msg, err)
 	}
+}
+
+func Set(ids []uint32) []uint32 {
+	ht := make(map[uint32]bool, len(ids))
+	for _, id := range ids {
+		ht[id] = true
+	}
+	ids = ids[:0]
+	for k, _ := range ht {
+		ids = append(ids, k)
+	}
+	return ids
+}
+
+// RemovePunctuation 移除所有的标点符号
+func RemovePunctuation(str string) string {
+	reg := regexp.MustCompile(`\p{P}+`)
+	return reg.ReplaceAllString(str, "")
+}
+
+// RemoveSpace 移除所有的空格
+func RemoveSpace(str string) string {
+	reg := regexp.MustCompile(`\s+`)
+	return reg.ReplaceAllString(str, "")
 }

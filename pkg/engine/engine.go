@@ -1,7 +1,14 @@
 package engine
 
 import (
+	"encoding/csv"
+	"fmt"
+	"math"
+	"os"
 	"path"
+	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -9,19 +16,26 @@ import (
 	"github.com/wangbin/jiebago"
 	"github.com/z-y-x233/goSearch/pkg/db"
 	"github.com/z-y-x233/goSearch/pkg/logger"
+	"github.com/z-y-x233/goSearch/pkg/model"
 	"github.com/z-y-x233/goSearch/pkg/protobuf/pb"
 	"github.com/z-y-x233/goSearch/pkg/tools"
 	"google.golang.org/protobuf/proto"
 )
 
-var (
-	DocDB      *db.BoltDb
-	InvDB      *db.BoltDb
-	Buckets    [][]byte
-	InvBuckets [][]byte
+type Engine struct {
+	DocDB   *db.BoltDb
+	InvDB   *db.BoltDb
+	Buckets [][]byte
+	Seg     jiebago.Segmenter
+	WordIds map[uint64]int
 
-	Seg jiebago.Segmenter
-)
+	InvReader *BufReader
+	InvWriter *BufWriter
+	DocReader *BufReader
+	DocWriter *BufWriter
+
+	wg sync.WaitGroup
+}
 
 type ReadObj struct {
 	Key    []byte
@@ -29,161 +43,116 @@ type ReadObj struct {
 }
 
 type WriteObj struct {
-	ReadObj
-	Val []byte
+	Key    []byte
+	Val    []byte
+	Bucket []byte
 }
 
 const (
-	ReadBufSize    = 1500
+	ReadBufSize    = 200
 	WriteBufSize   = 2500
 	BoltBucketSize = 100
+	MaxResultSize  = 1000
 )
 
-type BufReader struct {
-	BufSize int
-	Buf     []*ReadObj
-	ObjCh   chan []byte
-	readCh  chan *ReadObj
-	readWg  sync.WaitGroup
-	objWg   sync.WaitGroup
-	db      *db.BoltDb
+type Options struct {
+	DocPath     string
+	InvPath     string
+	DictPath    string
+	WordIdsPath string
+	ReadOnly    bool
 }
 
-func Init(invID int) {
+func (o *Options) String() string {
+	return fmt.Sprintf(
+		"DocPath: %s, InvPath: %s, DictPath: %s, ReadOnly: %v, WordIdsPath: %v",
+		o.DocPath, o.InvPath, o.DictPath, o.ReadOnly, o.WordIdsPath)
+}
 
-	Seg.LoadDictionary("./pkg/data/dict.txt")
+func DefaultOptions() *Options {
+	return &Options{
+		DocPath:     path.Join(viper.GetString("db.doc.dir"), viper.GetString("db.doc.bolt")),
+		InvPath:     path.Join(viper.GetString("db.invIndex.dir"), viper.GetString("db.invIndex.bolt")),
+		DictPath:    viper.GetString("db.dict"),
+		WordIdsPath: viper.GetString("db.wordIds"),
+		ReadOnly:    false,
+	}
+}
 
-	logger.Infoln("========================== open bolt doc database ==========================")
-	database := path.Join(viper.GetString("db.doc.dir"), viper.GetString("db.doc.bolt"))
+func (e *Engine) LoadWordIds(path string) {
+	f, err := os.OpenFile(path, os.O_RDONLY, 0664)
+	tools.HandleError("load word ids failed:", err)
+	defer f.Close()
 
-	DocDB, _ = db.Open(database, false)
+	reader := csv.NewReader(f)
+	reader.Comma = ' '
+	lines, err := reader.ReadAll()
+	tools.HandleError("read failed:", err)
+	for _, line := range lines {
+		word, _ := strconv.ParseUint(line[0], 10, 0)
+		ids, _ := strconv.Atoi(line[1])
+		e.WordIds[word] = ids
+	}
+}
 
-	Buckets = make([][]byte, 0)
+func NewEngine(option *Options) *Engine {
+	var (
+		e   *Engine = &Engine{}
+		err error
+	)
+	logger.Infoln("========================== Init Engine ==========================")
+	logger.Infoln("Options:", option)
+	logger.Infoln("========================== open database ==========================")
+	e.wg = sync.WaitGroup{}
+	e.wg.Add(1)
+	err = e.Seg.LoadDictionary(option.DictPath)
+	tools.HandleError(fmt.Sprintf("load %s failed:", option.DictPath), err)
+	e.DocDB, err = db.Open(option.DocPath, option.ReadOnly)
+	tools.HandleError(fmt.Sprintf("open %s failed:", option.DocPath), err)
+	e.Buckets = make([][]byte, 0)
+	e.WordIds = map[uint64]int{}
+	for i := 0; i < BoltBucketSize; i++ {
+		bucketName := tools.U32ToBytes(uint32(i))
+		e.Buckets = append(e.Buckets, bucketName)
+		if !option.ReadOnly {
+			err := e.DocDB.CreateBucketIfNotExist(bucketName)
+			tools.HandleError(fmt.Sprintf("create doc %d bucket failed:", i), err)
+		}
+
+	}
+
+	e.InvDB, err = db.Open(option.InvPath, option.ReadOnly)
+	tools.HandleError(fmt.Sprintf("open %s failed:", option.InvPath), err)
 
 	for i := 0; i < BoltBucketSize; i++ {
 		bucketName := tools.U32ToBytes(uint32(i))
-		Buckets = append(Buckets, bucketName)
-		err := DocDB.CreateBucketIfNotExist(bucketName)
-		if err != nil {
-			return
+		if !option.ReadOnly {
+			err := e.InvDB.CreateBucketIfNotExist(bucketName)
+			tools.HandleError(fmt.Sprintf("create inv %d bucket failed:", i), err)
 		}
 	}
-	logger.Infoln("========================== open bolt doc done ==========================")
-
-	logger.Infoln("========================== open bolt inv database ==========================")
-
-	dir := viper.GetString("db.invIndex.dir")
-	filename := viper.GetString("db.invIndex.bolt")
-	database = path.Join(dir, filename)
-
-	InvDB, _ = db.Open(database, false)
-
-	InvBuckets = make([][]byte, 0)
-
-	for i := 0; i < BoltBucketSize; i++ {
-		bucketName := tools.U32ToBytes(uint32(i))
-		InvBuckets = append(InvBuckets, bucketName)
-		err := InvDB.CreateBucketIfNotExist(bucketName)
-		if err != nil {
-			return
-		}
-	}
-	logger.Infoln("========================== open bolt inv done ==========================")
-
+	e.InvReader = NewBufReader(e.InvDB)
+	e.InvWriter = NewBufWriter(e.InvDB)
+	e.DocReader = NewBufReader(e.DocDB)
+	e.DocWriter = NewBufWriter(e.DocDB)
+	logger.Infoln("========================== load word ids ==========================")
+	e.LoadWordIds(option.WordIdsPath)
+	logger.Infoln("========================== Init Done ==========================")
+	e.wg.Done()
+	return e
 }
 
-func NewBufReader(db *db.BoltDb) *BufReader {
-	return &BufReader{
-		BufSize: ReadBufSize,
-		Buf:     make([]*ReadObj, 0),
-		ObjCh:   make(chan []byte, ReadBufSize*1000),
-		readCh:  make(chan *ReadObj, ReadBufSize*1000),
-		readWg:  sync.WaitGroup{},
-		objWg:   sync.WaitGroup{},
-		db:      db,
-	}
+func (e *Engine) Close() {
+	e.InvDB.Close()
+	e.DocDB.Close()
 }
 
-func (r *BufReader) Read(obj *ReadObj) {
-	r.readWg.Add(1)
-	// logger.Info("readWg add")
-	r.readCh <- obj
-}
-func (r *BufReader) Start() {
-	r.objWg.Add(1)
-	for item := range r.readCh {
-		r.readWg.Done()
-		// logger.Info("readWg done")
-		r.Buf = append(r.Buf, item)
-		if len(r.Buf) >= r.BufSize {
-			r.mulRead()
-			r.Buf = r.Buf[:0]
-		}
-	}
-
-	if len(r.Buf) > 0 {
-		r.mulRead()
-		r.Buf = r.Buf[:0]
-	}
-	r.objWg.Done()
+func (e *Engine) Wait() {
+	e.wg.Wait()
 }
 
-func (r *BufReader) GetData() (res [][]byte) {
-	r.readWg.Wait()
-	close(r.readCh)
-
-	go func() {
-		r.objWg.Wait()
-		close(r.ObjCh)
-	}()
-	for item := range r.ObjCh {
-		r.objWg.Done()
-		res = append(res, item)
-	}
-	return res
-}
-
-func (r *BufReader) mulRead() {
-	var wg sync.WaitGroup
-	wg.Add(len(r.Buf))
-	r.objWg.Add(1)
-	for _, item := range r.Buf {
-		go func(item *ReadObj) {
-			data, found := r.db.Get(item.Key, item.Bucket)
-			if found {
-				r.objWg.Add(1)
-				r.ObjCh <- data
-			}
-			wg.Done()
-		}(item)
-	}
-	wg.Wait()
-	r.objWg.Done()
-}
-
-func InvMarshal(item *pb.InvIndex) (data []byte, err error) {
-	data, err = proto.Marshal(item)
-	return
-}
-
-func DocMarshal(item *pb.DocIndex) (data []byte, err error) {
-	data, err = proto.Marshal(item)
-	return
-}
-
-func InvUnmarshal(data []byte) (item *pb.InvIndex, err error) {
-	item = &pb.InvIndex{}
-	err = proto.Unmarshal(data, item)
-	return
-}
-
-func DocUnmarshal(data []byte) (item *pb.DocIndex, err error) {
-	item = &pb.DocIndex{}
-	err = proto.Unmarshal(data, item)
-	return
-}
-
-type BufWriter struct {
+func DefaultEngine() *Engine {
+	return NewEngine(DefaultOptions())
 }
 
 func getWords(ch <-chan string) (words []string) {
@@ -193,96 +162,173 @@ func getWords(ch <-chan string) (words []string) {
 	return
 }
 
-func WordCut(q string) []string {
-	ch := Seg.CutForSearch(q, true)
+func (e *Engine) WordCutForInv(q string) []string {
+	//不区分大小写
+	q = strings.ToLower(q)
+	//移除所有的标点符号
+	q = tools.RemovePunctuation(q)
+	//移除所有的空格
+	q = tools.RemoveSpace(q)
+	ch := e.Seg.CutForSearch(q, true)
 	words := getWords(ch)
 
 	return words
 }
 
-func getDoc(docID uint32) *pb.DocIndex {
+func (e *Engine) WordCut(q string) (res []string) {
+
+	//不区分大小写
+	q = strings.ToLower(q)
+	//移除所有的标点符号
+	q = tools.RemovePunctuation(q)
+	//移除所有的空格
+	q = tools.RemoveSpace(q)
+
+	ch := e.Seg.CutForSearch(q, true)
+	words := getWords(ch)
+	wordSet := make(map[string]int, 10)
+	length := 0
+	for _, word := range words {
+		wordSet[word]++
+		if wordSet[word] == 1 {
+			key := tools.Str2Uint64(word)
+			length += e.WordIds[key]
+		}
+	}
+	logger.Info(wordSet)
+	for word := range wordSet {
+		key := tools.Str2Uint64(word)
+		logger.Infoln(word, len([]rune(word)), e.WordIds[key])
+		if len([]rune(word)) == 1 && e.WordIds[key] >= 10000 {
+			continue
+		}
+		if len(words) >= 5 && e.WordIds[key]*2 >= length {
+			continue
+		}
+		res = append(res, word)
+	}
+	if len(res) == 0 {
+		res = append(res, words[0])
+	}
+	return res
+}
+
+func (e *Engine) getDoc(docID uint32) *pb.DocIndex {
 	doc := &pb.DocIndex{}
-	data, _ := DocDB.Get(tools.U32ToBytes(docID), Buckets[docID%BoltBucketSize])
+	data, _ := e.DocDB.Get(tools.U32ToBytes(docID), e.Buckets[docID%BoltBucketSize])
 	proto.Unmarshal(data, doc)
 	return doc
 }
 
-func GetDocs(docIDs []uint32) []*pb.DocIndex {
+func (e *Engine) GetDocs(docIDs model.Docs) []*pb.DocIndex {
 	docs := []*pb.DocIndex{}
-	for _, uid := range docIDs {
-		docs = append(docs, getDoc(uid))
+	for _, doc := range docIDs {
+		docs = append(docs, e.getDoc(doc.Id))
 	}
 	return docs
 }
 
-func set(ids []uint32) []uint32 {
-	ht := make(map[uint32]bool, len(ids))
-	for _, id := range ids {
-		ht[id] = true
+func (e *Engine) GetInvItems(word uint64) *pb.InvIndex {
+	key := tools.U64ToBytes(word)
+	bucket := e.Buckets[word%BoltBucketSize]
+	buf, f := e.InvDB.Get(key, bucket)
+	if !f {
+		return nil
 	}
-	ids = ids[:0]
-	for k, _ := range ht {
-		ids = append(ids, k)
-	}
-	return ids
+	item := &pb.InvIndex{}
+	err := proto.Unmarshal(buf, item)
+	tools.HandleError("unmarshal fail:", err)
+	return item
 }
 
-func Query(q string) []*pb.DocIndex {
+func (e *Engine) idf(word uint64, N int) float64 {
 
-	words := WordCut(q)
-	docs := []*pb.DocIndex{}
+	return math.Log(float64(N+1)) / math.Log(float64(float64(e.WordIds[word])+0.5))
+
+}
+
+func (e *Engine) r(word uint64, tf int) float64 {
+	var (
+		k1 float64 = 1.2
+		b  float64 = 0.75
+	)
+	up := k1 * float64(tf)
+	down := k1*(1-b) + float64(tf)
+	return up / down
+}
+
+func (e *Engine) Query(q string) (res model.Docs) {
+	words := e.WordCut(q)
+	wordMap := make(map[uint64]*pb.InvIndex, len(words))
 	logger.Infoln(words)
-	ids := []uint32{}
 	tt := time.Now()
-	invReader := NewBufReader(InvDB)
-	docReader := NewBufReader(DocDB)
-	go invReader.Start()
-	go docReader.Start()
-
+	t := time.Now()
 	for _, word := range words {
-		id := tools.Str2Uint64(word)
-		key := tools.U64ToBytes(id)
-		bucket := Buckets[id%BoltBucketSize]
-		invReader.Read(&ReadObj{Key: key, Bucket: bucket})
-	}
-
-	invData := invReader.GetData()
-	for _, item := range invData {
-		// logger.Infoln(item)
-		inv, err := InvUnmarshal(item)
-		if err != nil {
-			logger.Panic("unmarshal failed:", err)
+		key := tools.Str2Uint64(word)
+		item := e.GetInvItems(key)
+		if item != nil {
+			wordMap[key] = item
 		}
-		ids = append(ids, inv.Ids...)
 	}
-	ids = set(ids)
-	// ids = ids[:100000]
-	logger.Infoln("read idx time:", time.Since(tt), "words:", len(words), "ids:", len(ids))
-	tt = time.Now()
-	for _, uid := range ids {
-		key := tools.U32ToBytes(uid)
-		bucket := Buckets[uid%BoltBucketSize]
-		docReader.Read(&ReadObj{Key: key, Bucket: bucket})
-	}
-	// docReader.GetData()
-	ut := time.Second * 0
-	rtt := time.Now()
-	docData := docReader.GetData()
-	rt := time.Since(rtt)
-	for _, item := range docData {
-		utt := time.Now()
-		doc, err := DocUnmarshal(item)
-		ut += time.Since(utt)
-		if err != nil {
-			logger.Panic(err)
-		}
-		docs = append(docs, doc)
-	}
+	parseTime := time.Since(t)
 
-	logger.Infoln("read doc time:", rt, "unmarshal time:", ut, "total time:", time.Since(tt))
-	return docs
+	docScore := make(map[uint32]float64, e.WordIds[tools.Str2Uint64(words[0])])
+	t = time.Now()
+	for _, item := range wordMap {
+		for _, item2 := range item.Items {
+			if _, ok := docScore[item2.Id]; !ok {
+				docScore[item2.Id] = 0
+			}
+		}
+	}
+	st := time.Since(t)
+	logger.Infoln("total time:", time.Since(tt), "find time:", parseTime, "find docs:", len(docScore), "stat time:", st)
+	t = time.Now()
+	logger.Infoln("Start cal doc score")
+
+	for _, item := range wordMap {
+		for _, doc := range item.Items {
+			docScore[doc.Id] += e.idf(item.Key, len(docScore)) * e.r(item.Key, int(doc.Cnt))
+		}
+	}
+	logger.Infoln("Cal score time:", time.Since(t))
+	t = time.Now()
+	for uid, score := range docScore {
+		res = append(res, &model.SliceItem{Id: uid, Score: score})
+	}
+	sort.Sort(res)
+	logger.Infoln("Sort time:", time.Since(t))
+	if len(res) > MaxResultSize {
+		res = res[:MaxResultSize]
+	}
+	return res
 }
 
-func Search(word string) {
-
+func (e *Engine) Search(q string) []*pb.DocIndex {
+	slices := e.Query(q)
+	t := time.Now()
+	res := e.GetDocs(slices)
+	logger.Infoln("Get docs time:", time.Since(t))
+	return res
+}
+func (e *Engine) ParseDoc() {
+	path := path.Join(viper.GetString("db.invIndex.dir"), viper.GetString("db.invIndex.bolt3"))
+	db2, _ := db.Open(path, false)
+	write := NewBufWriter(db2)
+	write.Start()
+	t := time.Now()
+	for i := 0; i < BoltBucketSize; i++ {
+		logger.Infoln("parse bucket:", i)
+		bucketName := tools.U32ToBytes(uint32(i))
+		db2.CreateBucketIfNotExist(bucketName)
+		vals, err := e.InvDB.GetVals(bucketName)
+		tools.HandleError("GetDoc error:", err)
+		for _, item := range vals {
+			invItem := &pb.InvIndex{}
+			proto.Unmarshal(item, invItem)
+			write.Write(&WriteObj{Key: tools.U64ToBytes(invItem.Key), Val: item, Bucket: bucketName})
+		}
+	}
+	write.Wait()
+	logger.Infoln("total time:", time.Since(t))
 }

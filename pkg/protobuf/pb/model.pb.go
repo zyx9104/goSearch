@@ -83,19 +83,74 @@ func (x *DocIndex) GetUrl() string {
 	return ""
 }
 
+type InvItem struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id  uint32 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Cnt int32  `protobuf:"varint,2,opt,name=cnt,proto3" json:"cnt,omitempty"`
+}
+
+func (x *InvItem) Reset() {
+	*x = InvItem{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_model_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *InvItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InvItem) ProtoMessage() {}
+
+func (x *InvItem) ProtoReflect() protoreflect.Message {
+	mi := &file_model_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InvItem.ProtoReflect.Descriptor instead.
+func (*InvItem) Descriptor() ([]byte, []int) {
+	return file_model_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *InvItem) GetId() uint32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *InvItem) GetCnt() int32 {
+	if x != nil {
+		return x.Cnt
+	}
+	return 0
+}
+
 type InvIndex struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Key uint64   `protobuf:"varint,1,opt,name=key,proto3" json:"key,omitempty"`
-	Ids []uint32 `protobuf:"varint,2,rep,packed,name=ids,proto3" json:"ids,omitempty"`
+	Key   uint64     `protobuf:"varint,1,opt,name=key,proto3" json:"key,omitempty"`
+	Items []*InvItem `protobuf:"bytes,2,rep,name=items,proto3" json:"items,omitempty"`
 }
 
 func (x *InvIndex) Reset() {
 	*x = InvIndex{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_model_proto_msgTypes[1]
+		mi := &file_model_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -108,7 +163,7 @@ func (x *InvIndex) String() string {
 func (*InvIndex) ProtoMessage() {}
 
 func (x *InvIndex) ProtoReflect() protoreflect.Message {
-	mi := &file_model_proto_msgTypes[1]
+	mi := &file_model_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -121,7 +176,7 @@ func (x *InvIndex) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InvIndex.ProtoReflect.Descriptor instead.
 func (*InvIndex) Descriptor() ([]byte, []int) {
-	return file_model_proto_rawDescGZIP(), []int{1}
+	return file_model_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *InvIndex) GetKey() uint64 {
@@ -131,9 +186,9 @@ func (x *InvIndex) GetKey() uint64 {
 	return 0
 }
 
-func (x *InvIndex) GetIds() []uint32 {
+func (x *InvIndex) GetItems() []*InvItem {
 	if x != nil {
-		return x.Ids
+		return x.Items
 	}
 	return nil
 }
@@ -146,11 +201,15 @@ var file_model_proto_rawDesc = []byte{
 	0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x02, 0x69, 0x64,
 	0x12, 0x12, 0x0a, 0x04, 0x74, 0x65, 0x78, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04,
 	0x74, 0x65, 0x78, 0x74, 0x12, 0x10, 0x0a, 0x03, 0x75, 0x72, 0x6c, 0x18, 0x03, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x03, 0x75, 0x72, 0x6c, 0x22, 0x2e, 0x0a, 0x08, 0x49, 0x6e, 0x76, 0x49, 0x6e, 0x64,
-	0x65, 0x78, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52,
-	0x03, 0x6b, 0x65, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x69, 0x64, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28,
-	0x0d, 0x52, 0x03, 0x69, 0x64, 0x73, 0x42, 0x06, 0x5a, 0x04, 0x2e, 0x2f, 0x70, 0x62, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x09, 0x52, 0x03, 0x75, 0x72, 0x6c, 0x22, 0x2b, 0x0a, 0x07, 0x49, 0x6e, 0x76, 0x49, 0x74, 0x65,
+	0x6d, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x02, 0x69,
+	0x64, 0x12, 0x10, 0x0a, 0x03, 0x63, 0x6e, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x03,
+	0x63, 0x6e, 0x74, 0x22, 0x42, 0x0a, 0x08, 0x49, 0x6e, 0x76, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12,
+	0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x03, 0x6b, 0x65,
+	0x79, 0x12, 0x24, 0x0a, 0x05, 0x69, 0x74, 0x65, 0x6d, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b,
+	0x32, 0x0e, 0x2e, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x2e, 0x49, 0x6e, 0x76, 0x49, 0x74, 0x65, 0x6d,
+	0x52, 0x05, 0x69, 0x74, 0x65, 0x6d, 0x73, 0x42, 0x06, 0x5a, 0x04, 0x2e, 0x2f, 0x70, 0x62, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -165,17 +224,19 @@ func file_model_proto_rawDescGZIP() []byte {
 	return file_model_proto_rawDescData
 }
 
-var file_model_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_model_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_model_proto_goTypes = []interface{}{
 	(*DocIndex)(nil), // 0: model.DocIndex
-	(*InvIndex)(nil), // 1: model.InvIndex
+	(*InvItem)(nil),  // 1: model.InvItem
+	(*InvIndex)(nil), // 2: model.InvIndex
 }
 var file_model_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	1, // 0: model.InvIndex.items:type_name -> model.InvItem
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_model_proto_init() }
@@ -197,6 +258,18 @@ func file_model_proto_init() {
 			}
 		}
 		file_model_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*InvItem); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_model_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*InvIndex); i {
 			case 0:
 				return &v.state
@@ -215,7 +288,7 @@ func file_model_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_model_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

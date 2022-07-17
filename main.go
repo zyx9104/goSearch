@@ -73,7 +73,6 @@ func init() {
 	wordFilterMap["“"] = true
 	wordFilterMap["’"] = true
 	wordFilterMap[","] = true
-	engine.Init(0)
 
 }
 
@@ -86,29 +85,29 @@ func print(ch <-chan string) (ss []string) {
 }
 
 func main() {
-	logger.Info("========================================start========================================")
+	logger.Infoln("========================== Process Start ==========================")
+
 	// s, _ := strconv.Atoi(os.Args[1])
 	// e, _ := strconv.Atoi(os.Args[2])
-	// invID, _ := strconv.Atoi(os.Args[3])
-
-	// s, e := 1, viper.GetInt("db.last_index")
-	// logger.Infoln("start", s, "end", e)
-	// gen.ParseData(1, 1000000)
-
-	// gen.BuildInvIdx(s, e)
-
+	// // s, e := 1, viper.GetInt("db.last_index")
+	// id, _ := strconv.Atoi(os.Args[3])
+	e := engine.DefaultEngine()
+	e.Wait()
 	q := os.Args[1]
-	// q := "今天星期几"
+
+	logger.Info("Start Search")
 	t := time.Now()
-	docs := engine.Query(q)
+	docs := e.Search(q)
+	st := time.Since(t)
 	for i, doc := range docs {
 		if i >= 10 {
 			break
 		}
-		logger.Infoln(doc.Id, doc.Text)
+		logger.Infoln(doc.Id, doc.Text, (len(doc.Text)+len(doc.Url)+4)/4)
+		// fmt.Println(doc.Id, doc.Text)
+
 	}
-	logger.Infoln(len(docs), "docs", "search time:", time.Since(t))
-
-	logger.Info("========================================done========================================")
-
+	logger.Info("Search Done time:", st)
+	// gen.GenWordIds()
+	logger.Infoln("========================== Process Done ==========================")
 }
