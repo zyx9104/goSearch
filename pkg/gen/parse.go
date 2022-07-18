@@ -31,7 +31,7 @@ func BuildInvIdx(start, end, id int) {
 	b := time.Now()
 	for i := start; i < end; i++ {
 		key := tools.U32ToBytes(uint32(i))
-		bucket := e.Buckets[i%engine.BoltBucketSize]
+		bucket := engine.Buckets[i%engine.BoltBucketSize]
 		e.DocReader.Read(&engine.ReadObj{Key: key, Bucket: bucket})
 
 	}
@@ -42,7 +42,7 @@ func BuildInvIdx(start, end, id int) {
 	invMap := make(map[uint64][]*pb.InvItem, 1000000)
 	parseDoc := func(doc *pb.DocIndex) {
 		wordMap := make(map[string]int, 100)
-		words := e.WordCutForInv(doc.Text)
+		words := tools.WordCutForInv(doc.Text)
 		for _, word := range words {
 			wordMap[word]++
 		}
@@ -81,7 +81,7 @@ func BuildInvIdx(start, end, id int) {
 	wt := time.Now()
 	for k, v := range invMap {
 		key := tools.U64ToBytes(k)
-		bucket := e.Buckets[k%engine.BoltBucketSize]
+		bucket := engine.Buckets[k%engine.BoltBucketSize]
 		val, err := proto.Marshal(&pb.InvIndex{Key: k, Items: v})
 		tools.HandleError("marshal inv failed:", err)
 		e.InvWriter.Write(&engine.WriteObj{Key: key, Val: val, Bucket: bucket})
@@ -101,7 +101,7 @@ func MergeIndex() {
 		path := path.Join(viper.GetString("db.invIndex.dir"), viper.GetString(fmt.Sprintf("db.invIndex.bolt%d", i)))
 		db, _ := db.Open(path, false)
 		for j := 0; j < engine.BoltBucketSize; j++ {
-			bucket := e.Buckets[j]
+			bucket := engine.Buckets[j]
 			vals, _ := db.GetVals(bucket)
 			for _, item := range vals {
 				invItem := &pb.InvIndex{}
@@ -129,7 +129,7 @@ func GenWordIds() {
 	e := engine.DefaultEngine()
 	wc := make(map[uint64]int, 8000000)
 	for i := 0; i < engine.BoltBucketSize; i++ {
-		bucket := e.Buckets[i]
+		bucket := engine.Buckets[i]
 		vals, err := e.InvDB.GetVals(bucket)
 		tools.HandleError("", err)
 		for _, bytes := range vals {

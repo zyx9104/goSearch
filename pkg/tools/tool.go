@@ -1,40 +1,120 @@
 package tools
 
 import (
-	"bytes"
-	"compress/gzip"
 	"encoding/binary"
 	"encoding/csv"
 	"fmt"
+	"log"
+	"math"
 	"os"
 	"regexp"
-	"time"
+	"strconv"
+	"strings"
 
 	"github.com/spaolacci/murmur3"
 	"github.com/spf13/viper"
+	"github.com/wangbin/jiebago"
 	"github.com/z-y-x233/goSearch/pkg/logger"
-	"github.com/z-y-x233/goSearch/pkg/model"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 )
 
 var (
-	Db       *gorm.DB
-	username string
-	password string
-	host     string
-	port     int
-	database string
-	args     string
+	Seg     jiebago.Segmenter
+	WordIds map[uint64]int
 )
 
-func init() {
-	username = viper.GetString("db.username")
-	password = viper.GetString("db.password")
-	host = viper.GetString("db.host")
-	port = viper.GetInt("db.port")
-	database = viper.GetString("db.database")
-	args = viper.GetString("db.args")
+func Init() {
+	log.Println(os.Getwd())
+	viper.SetConfigFile("./config.yml")
+	viper.AutomaticEnv()
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatal("load config failed:", err)
+	}
+	err = logger.Init()
+	if err != nil {
+		log.Fatal("init logger failed:", err)
+	}
+
+	logger.Infoln("Load dict")
+	dictPath := viper.GetString("db.dict")
+	err = Seg.LoadDictionary(dictPath)
+	HandleError(fmt.Sprintf("load %s failed:", dictPath), err)
+
+	logger.Infoln("Load Word Ids")
+	WordIds = make(map[uint64]int, 8000000)
+	wordIdsPath := viper.GetString("db.wordIds")
+	LoadWordIds(wordIdsPath)
+}
+
+func LoadWordIds(path string) {
+	f, err := os.OpenFile(path, os.O_RDONLY, 0664)
+	HandleError("load word ids failed:", err)
+	defer f.Close()
+	reader := csv.NewReader(f)
+	reader.Comma = ' '
+	lines, err := reader.ReadAll()
+	HandleError("read failed:", err)
+	for _, line := range lines {
+		word, _ := strconv.ParseUint(line[0], 10, 0)
+		ids, _ := strconv.Atoi(line[1])
+		WordIds[word] = ids
+	}
+}
+
+func getWords(ch <-chan string) (words []string) {
+	for word := range ch {
+		words = append(words, word)
+	}
+	return
+}
+
+func WordCutForInv(q string) []string {
+	//不区分大小写
+	q = strings.ToLower(q)
+	//移除所有的标点符号
+	q = RemovePunctuation(q)
+	//移除所有的空格
+	q = RemoveSpace(q)
+	ch := Seg.CutForSearch(q, true)
+	words := getWords(ch)
+
+	return words
+}
+
+func WordCut(q string) (res []string) {
+
+	//不区分大小写
+	q = strings.ToLower(q)
+	//移除所有的标点符号
+	q = RemovePunctuation(q)
+
+	ch := Seg.CutForSearch(q, true)
+	words := getWords(ch)
+	wordSet := make(map[string]int, 10)
+	length := 0
+	for _, word := range words {
+		wordSet[word]++
+		if wordSet[word] == 1 {
+			key := Str2Uint64(word)
+			length += WordIds[key]
+		}
+	}
+	// logger.Info(wordSet)
+	for word := range wordSet {
+		key := Str2Uint64(word)
+		// logger.Infoln(word, len([]rune(word)), WordIds[key])
+		if len([]rune(word)) == 1 && WordIds[key] >= 10000 {
+			continue
+		}
+		if len(words) >= 5 && WordIds[key]*2 >= length {
+			continue
+		}
+		res = append(res, word)
+	}
+	if len(res) == 0 && len(words) > 0 {
+		res = append(res, words[0])
+	}
+	return res
 }
 
 func Str2Uint64(str string) uint64 {
@@ -63,103 +143,16 @@ func ReadCsv(filepath string) [][]string {
 	defer opencast.Close()
 
 	logger.Debug("load:", filepath)
-	//创建csv读取接口实例
 	ReadCsv := csv.NewReader(opencast)
 	// ReadCsv.Comma = ' '
 	// ReadCsv.FieldsPerRecord = -1
+	//读取第一行
 	ReadCsv.Read()
-	//读取所有内容
 	ReadAll, err := ReadCsv.ReadAll() //返回切片类型：[[s s ds] [a a a]]
 	if err != nil {
 		logger.Panicln(filepath, err)
 	}
 	return ReadAll
-}
-
-func parseData(line []string, docs []model.Doc) []model.Doc {
-
-	h1 := Str2Uint64(line[0])
-	docs = append(docs, model.Doc{Hash: h1, Url: line[0], Text: line[1]})
-	if len(docs) >= 5000 {
-		rs := Db.Create(&docs)
-		if rs.Error != nil {
-			logger.Log.Debug(rs.Error)
-		}
-		logger.Log.Debugf("load %d lines data:", rs.RowsAffected)
-		docs = docs[:0]
-	}
-	return docs
-}
-
-func ReadToDb() {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?%s", username, password, host, port, database, args)
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-	}
-
-	db.AutoMigrate(&model.Doc{})
-	var filepath string
-
-	for i := 0; i <= 255; i++ {
-		filepath = fmt.Sprintf("../wukong_release/wukong_100m_%d.csv", i)
-
-		ReadAll := ReadCsv(filepath)
-		docs := make([]model.Doc, 0)
-
-		for _, line := range ReadAll {
-			docs = parseData(line, docs)
-		}
-		db.Create(&docs)
-		logger.Log.Debugf("load %d lines data:", len(docs))
-	}
-
-}
-
-func ExecTime(fn func()) float64 {
-	start := time.Now()
-	fn()
-	tc := float64(time.Since(start).Nanoseconds())
-	return tc / 1e6
-}
-
-//Encode 压缩[]byte
-func Encode(input []byte) ([]byte, error) {
-	// 创建一个新的 byte 输出流
-	var buf bytes.Buffer
-	// 创建一个新的 gzip 输出流
-	gzipWriter := gzip.NewWriter(&buf)
-	// 将 input byte 数组写入到此输出流中
-	_, err := gzipWriter.Write(input)
-	if err != nil {
-		_ = gzipWriter.Close()
-		return nil, err
-	}
-	if err := gzipWriter.Close(); err != nil {
-		return nil, err
-	}
-	// 返回压缩后的 bytes 数组
-	return buf.Bytes(), nil
-}
-
-//Decode 解压[]byte
-func Decode(input []byte) ([]byte, error) {
-	// 创建一个新的 gzip.Reader
-	bytesReader := bytes.NewReader(input)
-	gzipReader, err := gzip.NewReader(bytesReader)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		// defer 中关闭 gzipReader
-		_ = gzipReader.Close()
-	}()
-	buf := new(bytes.Buffer)
-	// 从 Reader 中读取出数据
-	if _, err := buf.ReadFrom(gzipReader); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
 }
 
 func HandleError(msg string, err error) {
@@ -190,4 +183,18 @@ func RemovePunctuation(str string) string {
 func RemoveSpace(str string) string {
 	reg := regexp.MustCompile(`\s+`)
 	return reg.ReplaceAllString(str, "")
+}
+
+func IDF(word uint64, N int) float64 {
+	return math.Log(float64(N+1)) / math.Log(float64(float64(WordIds[word])+0.5))
+}
+
+func R(word uint64, tf int) float64 {
+	var (
+		k1 float64 = 1.2
+		b  float64 = 0.75
+	)
+	up := k1 * float64(tf)
+	down := k1*(1-b) + float64(tf)
+	return up / down
 }

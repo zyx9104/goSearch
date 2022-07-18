@@ -1,0 +1,25 @@
+log: 
+  debug: true
+  level: info
+  path: ./logs
+  filename: server
+db:
+  driver: mysql
+  username: root
+  password: rootroot
+  host: 127.0.0.1
+  port: 63306
+  database: go_search
+  args: charset=utf8mb4&parseTime=True&loc=Local
+  
+  doc: 
+    dir: ./pkg/data/doc
+    bolt: bolt_doc.db
+  
+  invIndex: 
+    dir: ./pkg/data/inv
+    bolt: key_doc.db
+  
+  dict: ./pkg/data/dict.txt
+  wordIds: ./pkg/data/word_ids.txt
+  last_index: 101483886

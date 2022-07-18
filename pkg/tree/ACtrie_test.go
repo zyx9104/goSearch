@@ -5,6 +5,7 @@ import (
 )
 
 func TestACtire(t *testing.T) {
+
 	act := NewAC()
 	type Test struct {
 		str string

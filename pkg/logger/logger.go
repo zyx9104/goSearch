@@ -65,7 +65,7 @@ func Init() error {
 
 	cwd, _ := os.Getwd()
 	baseLogPath := path.Join(cwd, "logs", logFilename)
-	linkName := path.Join(cwd, "logs", logFilename+".log")
+	linkName := path.Join(cwd, "logs", "a"+logFilename+".log")
 	Writer, err = rotateLogs.New(
 		baseLogPath+"_%Y%m%d%H%M.log",
 		rotateLogs.WithLinkName(linkName),         // 生成软链，指向最新日志文件

@@ -32,6 +32,7 @@ func NewAC() *AcNode {
 }
 
 func (ac *AcNode) insert(s string) {
+
 	bytes := []byte(s)
 	u := ac
 	for _, c := range bytes {
@@ -40,7 +41,9 @@ func (ac *AcNode) insert(s string) {
 		}
 		u = u.son[c]
 	}
-	u.cnt++
+	if u != ac {
+		u.cnt++
+	}
 
 }
 
@@ -72,6 +75,7 @@ func (ac *AcNode) Build(strs []string) {
 }
 
 func (ac *AcNode) Find(s string) bool {
+
 	u := ac
 	str := []byte(s)
 	for _, c := range str {
