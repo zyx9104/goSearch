@@ -1,6 +1,6 @@
 log: 
   debug: true
-  level: info
+  level: debug
   path: ./logs
   filename: server
 db:
@@ -22,4 +22,6 @@ db:
   
   dict: ./pkg/data/dict.txt
   wordIds: ./pkg/data/word_ids.txt
+  searchHistory: ./pkg/data/history
   last_index: 101483886
+

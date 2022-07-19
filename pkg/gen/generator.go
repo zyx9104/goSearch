@@ -3,6 +3,7 @@ package gen
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"os"
 	"path"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/z-y-x233/goSearch/pkg/logger"
 	"github.com/z-y-x233/goSearch/pkg/protobuf/pb"
 	"github.com/z-y-x233/goSearch/pkg/tools"
+	"github.com/z-y-x233/goSearch/pkg/tree"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -145,4 +147,39 @@ func GenWordIds() {
 		wt.WriteString(fmt.Sprintf("%v %v\n", k, v))
 	}
 	wt.Flush()
+}
+
+func GenSearchHistory() {
+	e := engine.DefaultEngine()
+	e.Wait()
+	n := 300000
+	buf := 2500
+
+	tr := tree.NewTrie()
+	ids := []uint32{}
+	for i := 0; i < n; i++ {
+		uid := uint32(rand.Int31n(101483886))
+		ids = append(ids, uid)
+	}
+	t := time.Now()
+	docs := e.GetDocsByUid(ids)
+	cnt := 0
+	logger.Info("get docs time:", time.Since(t))
+	t = time.Now()
+	for _, doc := range docs {
+		tr.Insert(doc.Text)
+		cnt++
+		if cnt == buf {
+			logger.Debugln("insert", cnt, "query", "insert time:", time.Since(t))
+			t = time.Now()
+			cnt = 0
+		}
+	}
+	filenema := viper.GetString("db.searchHistory")
+	// ss := tr.RelatedSearch("", tr.Size)
+	// for _, line := range ss {
+	// 	logger.Debug(line)
+	// }
+	tr.Save(filenema)
+	logger.Info("save time: ", time.Since(t))
 }

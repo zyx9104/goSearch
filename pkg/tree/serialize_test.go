@@ -15,7 +15,7 @@ func TestSerialize(t *testing.T) {
 	}
 	data, _ := tr.Serialize()
 	tr.UnSerialize(data)
-	res := tr.RelatedSearch("")
+	res := tr.RelatedSearch("", tr.Size)
 	t.Log(res)
 
 }

@@ -134,7 +134,7 @@ func DefaultEngine() *Engine {
 	return NewEngine(DefaultOptions())
 }
 
-func (e *Engine) getDoc(docID uint32) *pb.DocIndex {
+func (e *Engine) GetDoc(docID uint32) *pb.DocIndex {
 	doc := &pb.DocIndex{}
 	data, _ := e.DocDB.Get(tools.U32ToBytes(docID), Buckets[docID%BoltBucketSize])
 	proto.Unmarshal(data, doc)
@@ -143,8 +143,27 @@ func (e *Engine) getDoc(docID uint32) *pb.DocIndex {
 
 func (e *Engine) GetDocs(docIDs model.Docs) []*pb.DocIndex {
 	docs := []*pb.DocIndex{}
+	e.DocReader.Start(ReadBufSize, MaxResultSize)
 	for _, doc := range docIDs {
-		docs = append(docs, e.getDoc(doc.Id))
+		key := tools.U32ToBytes(doc.Id)
+		bucket := Buckets[doc.Id%BoltBucketSize]
+		e.DocReader.Read(&ReadObj{Key: key, Bucket: bucket})
+	}
+	data := e.DocReader.GetData()
+	for _, item := range data {
+		doc := &pb.DocIndex{}
+		err := proto.Unmarshal(item, doc)
+		tools.HandleError("unmarshal failed:", err)
+		docs = append(docs, doc)
+	}
+	return docs
+}
+
+func (e *Engine) GetDocsByUid(docIDs []uint32) []*pb.DocIndex {
+	docs := []*pb.DocIndex{}
+	for _, uid := range docIDs {
+		doc := e.GetDoc(uid)
+		docs = append(docs, doc)
 	}
 	return docs
 }
@@ -187,8 +206,11 @@ func (e *Engine) Query(q string) (res model.Docs) {
 		wordMap[item.Key] = item
 	}
 	parseTime := time.Since(t)
-
-	docScore := make(map[uint32]float64, tools.WordIds[tools.Str2Uint64(words[0])])
+	var size uint64 = 0
+	if len(words) > 0 {
+		size = tools.Str2Uint64(words[0])
+	}
+	docScore := make(map[uint32]float64, tools.WordIds[size])
 	t = time.Now()
 	for _, item := range wordMap {
 		for _, item2 := range item.Items {

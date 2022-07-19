@@ -3,12 +3,14 @@ package tree
 import (
 	"container/heap"
 
+	"github.com/z-y-x233/goSearch/pkg/logger"
 	"github.com/z-y-x233/goSearch/pkg/tools"
 )
 
 type TrieNode struct {
 	Cnt int
-	Son [charSet]*TrieNode // 子节点
+
+	Son map[byte]*TrieNode // 子节点
 }
 
 type Trie struct {
@@ -24,24 +26,28 @@ type Query struct {
 }
 
 func NewTrie() *Trie {
-	return &Trie{Root: &TrieNode{}}
+	return &Trie{Root: &TrieNode{Son: make(map[byte]*TrieNode, 5)}}
 }
 
 func (t *Trie) Insert(s string) {
-	bytes := []byte(s)
+	t.InsertQuery(Search{Q: s, Cnt: 1})
+}
+
+func (t *Trie) InsertQuery(s Search) {
+	bytes := []byte(s.Q)
 	u := t.Root
 	for _, c := range bytes {
 		if u.Son[c] == nil {
-			u.Son[c] = &TrieNode{}
+			u.Son[c] = &TrieNode{Son: make(map[byte]*TrieNode, 5)}
 		}
 		u = u.Son[c]
 	}
 	if u != t.Root {
-		u.Cnt++
-		t.Size++
-		if u.Cnt == 1 {
+		if u.Cnt == 0 {
 			t.Cnt++
 		}
+		u.Cnt += s.Cnt
+		t.Size += s.Cnt
 	}
 }
 
@@ -73,33 +79,40 @@ func (t *Trie) Walk(node *TrieNode, wordMap map[string]bool, s []byte, ch chan *
 		Q := &Query{Q: q, Cnt: node.Cnt, Score: score}
 		ch <- Q
 	}
-	for i := 0; i < charSet; i++ {
-		u := node.Son[i]
-		b := byte(i)
-
-		t.Walk(u, wordMap, append(s, b), ch)
+	for k, v := range node.Son {
+		t.Walk(v, wordMap, append(s, k), ch)
 	}
 }
 
-func (t *Trie) RelatedSearch(q string) (res []string) {
-	ch := make(chan *Query, 10000)
+func (t *Trie) RelatedSearch(q string, num int) (res []Search) {
+	ch := make(chan *Query, t.Size*2)
 	wordMap := make(map[string]bool, 10)
 	words := tools.WordCut(q)
 	u := t.FindNode(q)
+	if u == nil {
+		return
+	}
+	logger.Debug("find node!")
 	for _, word := range words {
 		wordMap[word] = true
 	}
+	logger.Debug("walk start!")
+
 	t.Walk(u, wordMap, []byte(q), ch)
+	logger.Debug("walk done!")
+
 	close(ch)
 	h := NewMaxHeap()
 	for q := range ch {
 		heap.Push(h, q)
-		if h.Len() > 10 {
+		if h.Len() > num {
 			heap.Pop(h)
 		}
 	}
 	for h.Len() > 0 {
-		res = append(res, heap.Pop(h).(*Query).Q)
+		f := heap.Pop(h).(*Query)
+		se := Search{Q: f.Q, Cnt: f.Cnt}
+		res = append(res, se)
 	}
 	return
 }

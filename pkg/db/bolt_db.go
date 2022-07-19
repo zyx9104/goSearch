@@ -60,6 +60,7 @@ func (s *BoltDb) Get(key []byte, bucketName []byte) ([]byte, bool) {
 	if buffer == nil {
 		return nil, false
 	}
+
 	return buffer, true
 }
 

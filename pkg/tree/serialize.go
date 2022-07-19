@@ -7,8 +7,13 @@ import (
 	"github.com/z-y-x233/goSearch/pkg/tools"
 )
 
+type Search struct {
+	Q   string
+	Cnt int
+}
+
 func (t *Trie) Serialize() ([]byte, error) {
-	qs := t.RelatedSearch("")
+	qs := t.RelatedSearch("", t.Size)
 	buf := &bytes.Buffer{}
 	encoder := gob.NewEncoder(buf)
 	err := encoder.Encode(qs)
@@ -19,14 +24,14 @@ func (t *Trie) Serialize() ([]byte, error) {
 }
 
 func (t *Trie) UnSerialize(data []byte) error {
-	qs := []string{}
+	qs := []Search{}
 	decoder := gob.NewDecoder(bytes.NewBuffer(data))
 	err := decoder.Decode(&qs)
 	if err != nil {
 		return err
 	}
 	for _, q := range qs {
-		t.Insert(q)
+		t.InsertQuery(q)
 	}
 	return nil
 }

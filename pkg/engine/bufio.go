@@ -105,6 +105,7 @@ func (r *BufReader) mulRead() {
 				r.objWg.Add(1)
 				r.ObjCh <- data
 			}
+			logger.Debug("done")
 			wg.Done()
 		}(item)
 	}
