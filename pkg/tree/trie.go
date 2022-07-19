@@ -2,7 +2,6 @@ package tree
 
 import (
 	"container/heap"
-	"log"
 
 	"github.com/z-y-x233/goSearch/pkg/tools"
 )
@@ -71,16 +70,13 @@ func (t *Trie) Walk(node *TrieNode, wordMap map[string]bool, s []byte, ch chan *
 				score++
 			}
 		}
-		ch <- &Query{Q: q, Cnt: node.Cnt, Score: score}
+		Q := &Query{Q: q, Cnt: node.Cnt, Score: score}
+		ch <- Q
 	}
 	for i := 0; i < charSet; i++ {
 		u := node.Son[i]
 		b := byte(i)
-		if i == 49 {
-			x := 5
-			x = x * x
-			log.Print(x)
-		}
+
 		t.Walk(u, wordMap, append(s, b), ch)
 	}
 }
@@ -94,7 +90,7 @@ func (t *Trie) RelatedSearch(q string) (res []string) {
 		wordMap[word] = true
 	}
 	t.Walk(u, wordMap, []byte(q), ch)
-	// close(ch)
+	close(ch)
 	h := NewMaxHeap()
 	for q := range ch {
 		heap.Push(h, q)

@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/csv"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math"
 	"os"
@@ -61,8 +62,9 @@ func LoadWordIds(path string) {
 	}
 }
 
-func getWords(ch <-chan string) (words []string) {
-	for word := range ch {
+func getWords(chh <-chan string) (words []string) {
+
+	for word := range chh {
 		words = append(words, word)
 	}
 	return
@@ -197,4 +199,23 @@ func R(word uint64, tf int) float64 {
 	up := k1 * float64(tf)
 	down := k1*(1-b) + float64(tf)
 	return up / down
+}
+
+func WriteBytes(data []byte, filename string) error {
+	err := ioutil.WriteFile(filename, data, 0644)
+	if err != nil {
+		return err
+	}
+	logger.Debugln("write", len(data), "bytes to", filename)
+	return nil
+}
+
+func ReadBytes(filename string) (data []byte, err error) {
+
+	data, err = ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	logger.Debugln("read", len(data), "bytes from", filename)
+	return data, nil
 }

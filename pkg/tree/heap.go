@@ -9,10 +9,11 @@ func (h MaxHeap) Len() int {
 }
 
 func (h MaxHeap) Less(i, j int) bool {
-	if h[i].Cnt == h[j].Cnt {
-		return h[i].Score > h[j].Score
-	}
-	return h[i].Cnt > h[j].Cnt
+	// if h[i].Cnt == h[j].Cnt {
+	// 	return h[i].Score > h[j].Score
+	// }
+	// return h[i].Cnt > h[j].Cnt
+	return h[i].Cnt+int(h[i].Score) > h[j].Cnt+int(h[j].Score)
 
 }
 
