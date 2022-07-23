@@ -2,15 +2,25 @@ package tree
 
 import (
 	"github.com/spf13/viper"
+	"github.com/z-y-x233/goSearch/pkg/logger"
 )
 
 var (
-	trie *Trie
+	trie     *Trie
+	filepath string
 )
 
 func Init() {
 	trie = NewTrie()
-	trie.LoadData(viper.GetString("db.searchHistory"))
+	filepath = viper.GetString("db.searchHistory")
+	logger.Infoln("Load History Search")
+	trie.LoadData(filepath)
+}
+
+func Close() {
+	logger.Infoln("Close Trie")
+	logger.Infoln("Save Data to", filepath)
+	trie.Save(filepath)
 }
 
 func AddQuery(q string) {
@@ -18,5 +28,8 @@ func AddQuery(q string) {
 }
 
 func FindRelated(q string, num int) []Search {
+	if q == "" {
+		return []Search{}
+	}
 	return trie.RelatedSearch(q, num)
 }

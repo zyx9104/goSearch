@@ -13,15 +13,15 @@ db:
   args: charset=utf8mb4&parseTime=True&loc=Local
   
   doc: 
-    dir: ./pkg/data/doc
+    dir: ./data/doc
     bolt: bolt_doc.db
   
   invIndex: 
-    dir: ./pkg/data/inv
+    dir: ./data/inv
     bolt: key_doc.db
   
-  dict: ./pkg/data/dict.txt
-  wordIds: ./pkg/data/word_ids.txt
-  searchHistory: ./pkg/data/history
+  dict: ./data/dict.txt
+  wordIds: ./data/word_ids.txt
+  searchHistory: ./data/history
   last_index: 101483886
 

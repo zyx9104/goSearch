@@ -24,7 +24,6 @@ var (
 )
 
 func Init() {
-	log.Println(os.Getwd())
 	viper.SetConfigFile("./config.yml")
 	viper.AutomaticEnv()
 	err := viper.ReadInConfig()
@@ -42,7 +41,7 @@ func Init() {
 	HandleError(fmt.Sprintf("load %s failed:", dictPath), err)
 
 	logger.Infoln("Load Word Ids")
-	WordIds = make(map[uint64]int, 8000000)
+	WordIds = make(map[uint64]int, 16000000)
 	wordIdsPath := viper.GetString("db.wordIds")
 	LoadWordIds(wordIdsPath)
 }
@@ -169,7 +168,7 @@ func Set(ids []uint32) []uint32 {
 		ht[id] = true
 	}
 	ids = ids[:0]
-	for k, _ := range ht {
+	for k := range ht {
 		ids = append(ids, k)
 	}
 	return ids
@@ -191,7 +190,7 @@ func IDF(word uint64, N int) float64 {
 	return math.Log(float64(N+1)) / math.Log(float64(float64(WordIds[word])+0.5))
 }
 
-func R(word uint64, tf int) float64 {
+func R(tf int) float64 {
 	var (
 		k1 float64 = 1.2
 		b  float64 = 0.75

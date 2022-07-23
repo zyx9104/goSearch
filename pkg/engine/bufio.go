@@ -85,8 +85,8 @@ func (r *BufReader) GetData() (res [][]byte) {
 		close(r.ObjCh)
 	}()
 	for item := range r.ObjCh {
-		logger.Debugf("get one obj time: %v", time.Since(t))
-		t = time.Now()
+		// logger.Debugf("get one obj time: %v", time.Since(t))
+		// t = time.Now()
 		r.objWg.Done()
 		res = append(res, item)
 	}
@@ -105,7 +105,6 @@ func (r *BufReader) mulRead() {
 				r.objWg.Add(1)
 				r.ObjCh <- data
 			}
-			logger.Debug("done")
 			wg.Done()
 		}(item)
 	}

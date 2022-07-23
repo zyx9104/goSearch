@@ -11,20 +11,16 @@ import (
 	"github.com/z-y-x233/goSearch/pkg/db"
 	"github.com/z-y-x233/goSearch/pkg/logger"
 	"github.com/z-y-x233/goSearch/pkg/model"
-	"github.com/z-y-x233/goSearch/pkg/protobuf/pb"
+	"github.com/z-y-x233/goSearch/pkg/proto/pb"
 	"github.com/z-y-x233/goSearch/pkg/tools"
 	"github.com/z-y-x233/goSearch/pkg/tree"
 	"google.golang.org/protobuf/proto"
 )
 
 type Engine struct {
-	DocDB     *db.BoltDb
-	InvDB     *db.BoltDb
-	InvReader *BufReader
-	InvWriter *BufWriter
-	DocReader *BufReader
-	DocWriter *BufWriter
-	wg        sync.WaitGroup
+	DocDB *db.BoltDb
+	InvDB *db.BoltDb
+	wg    sync.WaitGroup
 }
 
 type ReadObj struct {
@@ -52,11 +48,10 @@ const (
 	ReadBufSize    = 200
 	WriteBufSize   = 2500
 	BoltBucketSize = 100
-	MaxResultSize  = 500
+	MaxResultSize  = 1000
 )
 
 func Init() {
-
 	Buckets = make([][]byte, 0)
 	for i := 0; i < BoltBucketSize; i++ {
 		bucketName := tools.U32ToBytes(uint32(i))
@@ -79,6 +74,7 @@ func DefaultOptions() *Options {
 }
 
 func NewEngine(option *Options) *Engine {
+
 	var (
 		e   *Engine = &Engine{}
 		err error
@@ -111,10 +107,6 @@ func NewEngine(option *Options) *Engine {
 			tools.HandleError(fmt.Sprintf("create inv %d bucket failed:", i), err)
 		}
 	}
-	e.InvReader = NewBufReader(e.InvDB)
-	e.InvWriter = NewBufWriter(e.InvDB)
-	e.DocReader = NewBufReader(e.DocDB)
-	e.DocWriter = NewBufWriter(e.DocDB)
 
 	logger.Infoln("========================== Init Done ==========================")
 	e.wg.Done()
@@ -122,6 +114,7 @@ func NewEngine(option *Options) *Engine {
 }
 
 func (e *Engine) Close() {
+	logger.Infoln("Close Database")
 	e.InvDB.Close()
 	e.DocDB.Close()
 }
@@ -143,13 +136,15 @@ func (e *Engine) GetDoc(docID uint32) *pb.DocIndex {
 
 func (e *Engine) GetDocs(docIDs model.Docs) []*pb.DocIndex {
 	docs := []*pb.DocIndex{}
-	e.DocReader.Start(ReadBufSize, MaxResultSize)
+	docReader := NewBufReader(e.DocDB)
+	docReader.Start(len(docIDs)*2, MaxResultSize*3/2)
+
 	for _, doc := range docIDs {
 		key := tools.U32ToBytes(doc.Id)
 		bucket := Buckets[doc.Id%BoltBucketSize]
-		e.DocReader.Read(&ReadObj{Key: key, Bucket: bucket})
+		docReader.Read(&ReadObj{Key: key, Bucket: bucket})
 	}
-	data := e.DocReader.GetData()
+	data := docReader.GetData()
 	for _, item := range data {
 		doc := &pb.DocIndex{}
 		err := proto.Unmarshal(item, doc)
@@ -226,7 +221,7 @@ func (e *Engine) Query(q string) (res model.Docs) {
 
 	for _, item := range wordMap {
 		for _, doc := range item.Items {
-			docScore[doc.Id] += tools.IDF(item.Key, len(docScore)) * tools.R(item.Key, int(doc.Cnt))
+			docScore[doc.Id] += tools.IDF(item.Key, len(docScore)) * tools.R(int(doc.Cnt))
 		}
 	}
 	logger.Infoln("Cal score time:", time.Since(t))
