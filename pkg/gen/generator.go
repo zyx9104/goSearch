@@ -12,7 +12,7 @@ import (
 	"github.com/z-y-x233/goSearch/pkg/db"
 	"github.com/z-y-x233/goSearch/pkg/engine"
 	"github.com/z-y-x233/goSearch/pkg/logger"
-	"github.com/z-y-x233/goSearch/pkg/protobuf/pb"
+	"github.com/z-y-x233/goSearch/pkg/proto/pb"
 	"github.com/z-y-x233/goSearch/pkg/tools"
 	"github.com/z-y-x233/goSearch/pkg/tree"
 	"google.golang.org/protobuf/proto"
@@ -29,15 +29,16 @@ func BuildInvIdx(start, end, id int) {
 	o.InvPath = path.Join(viper.GetString("db.invIndex.dir"), viper.GetString(s))
 	e := engine.NewEngine(o)
 	e.Wait()
-	e.DocReader.Start(1000000, 1000000)
+	docReader := engine.NewBufReader(e.DocDB)
+	docReader.Start(1000000, 1000000)
 	b := time.Now()
 	for i := start; i < end; i++ {
 		key := tools.U32ToBytes(uint32(i))
 		bucket := engine.Buckets[i%engine.BoltBucketSize]
-		e.DocReader.Read(&engine.ReadObj{Key: key, Bucket: bucket})
+		docReader.Read(&engine.ReadObj{Key: key, Bucket: bucket})
 
 	}
-	docData := e.DocReader.GetData()
+	docData := docReader.GetData()
 
 	logger.Infof("from %v to %v, read time: %v", start, end, time.Since(b))
 
@@ -78,7 +79,8 @@ func BuildInvIdx(start, end, id int) {
 	logger.Infoln("Parse doc time:", time.Since(dt))
 
 	logger.Infoln("Start write inv index")
-	e.InvWriter.Start()
+	invWriter := engine.NewBufWriter(e.InvDB)
+	invWriter.Start()
 
 	wt := time.Now()
 	for k, v := range invMap {
@@ -86,10 +88,10 @@ func BuildInvIdx(start, end, id int) {
 		bucket := engine.Buckets[k%engine.BoltBucketSize]
 		val, err := proto.Marshal(&pb.InvIndex{Key: k, Items: v})
 		tools.HandleError("marshal inv failed:", err)
-		e.InvWriter.Write(&engine.WriteObj{Key: key, Val: val, Bucket: bucket})
+		invWriter.Write(&engine.WriteObj{Key: key, Val: val, Bucket: bucket})
 		delete(invMap, k)
 	}
-	e.InvWriter.Wait()
+	invWriter.Wait()
 	logger.Infof("write time: %v", time.Since(wt))
 	logger.Infoln("===========================build inv index done===================================")
 }
@@ -97,7 +99,9 @@ func BuildInvIdx(start, end, id int) {
 func MergeIndex() {
 	e := engine.DefaultEngine()
 	e.Wait()
-	e.InvWriter.Start()
+	invWriter := engine.NewBufWriter(e.InvDB)
+
+	invWriter.Start()
 	t := time.Now()
 	for i := 1; i <= 1; i++ {
 		path := path.Join(viper.GetString("db.invIndex.dir"), viper.GetString(fmt.Sprintf("db.invIndex.bolt%d", i)))
@@ -116,15 +120,15 @@ func MergeIndex() {
 					invItem.Items = append(invItem.Items, temp.Items...)
 				}
 				data, _ := proto.Marshal(invItem)
-				e.InvWriter.Write(&engine.WriteObj{Key: tools.U64ToBytes(invItem.Key), Val: data, Bucket: bucket})
+				invWriter.Write(&engine.WriteObj{Key: tools.U64ToBytes(invItem.Key), Val: data, Bucket: bucket})
 			}
 		}
-		e.InvWriter.Wait()
+		invWriter.Wait()
 		logger.Infoln("merge", i, "done", "time:", time.Since(t))
 		t = time.Now()
-		e.InvWriter.Start()
+		invWriter.Start()
 	}
-	e.InvWriter.Wait()
+	invWriter.Wait()
 }
 
 func GenWordIds() {
