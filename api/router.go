@@ -10,9 +10,9 @@ import (
 func InitRouter(e *gin.Engine) {
 	apiv1 := e.Group("api/v1")
 	{
+		apiv1.GET("/search/related/:query", v1.Related)
 		apiv1.POST("/search", v1.Search)
-		// apiv1.POST("/search/hot/")
-		// apiv1.POST("/search/related")
+		apiv1.POST("/put", v1.Put)
 
 	}
 }

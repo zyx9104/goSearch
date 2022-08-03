@@ -4,12 +4,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/z-y-x233/goSearch/pkg/model"
 	"github.com/z-y-x233/goSearch/pkg/tools"
 	"github.com/z-y-x233/goSearch/pkg/tree"
 )
 
-func Search(req *model.SearchRequest) *model.SearchResult {
+func Search(req *model.SearchRequest) *model.SearchResponse {
 	start := time.Now()
 
 	//获取分词
@@ -47,7 +48,7 @@ func Search(req *model.SearchRequest) *model.SearchResult {
 	//添加查询
 	tree.AddQuery(req.Query)
 
-	result := &model.SearchResult{
+	result := &model.SearchResponse{
 		Total:     total,
 		PageCount: pageCount,
 		Page:      req.Page,
@@ -58,4 +59,16 @@ func Search(req *model.SearchRequest) *model.SearchResult {
 	}
 	result.Time = float64(time.Since(start) / time.Millisecond)
 	return result
+}
+
+func Put(c *gin.Context) {
+
+}
+
+func Get(c *gin.Context) {
+
+}
+
+func Related(c *gin.Context) {
+
 }

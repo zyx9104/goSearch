@@ -79,7 +79,6 @@ func (ac *AcNode) Find(s string) bool {
 	u := ac
 	str := []byte(s)
 	for _, c := range str {
-
 		u = u.son[c]
 		for v := u; v != nil; v = v.fail {
 			if v.cnt != 0 {

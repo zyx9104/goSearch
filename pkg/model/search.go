@@ -16,8 +16,6 @@ type SearchRequest struct {
 
 }
 
-// curl -X POST -d "query=123&page=1&limit=10" localhost:8080
-
 func (s *SearchRequest) GetAndSetDefault() *SearchRequest {
 
 	if s.Limit == 0 {
@@ -37,8 +35,8 @@ func (s *SearchRequest) GetAndSetDefault() *SearchRequest {
 	return s
 }
 
-// SearchResult 搜索响应
-type SearchResult struct {
+// SearchResponse 搜索响应
+type SearchResponse struct {
 	Time      float64       `json:"time,omitempty"`      //查询用时
 	Total     int           `json:"total"`               //总数
 	PageCount int           `json:"pageCount"`           //总页数
@@ -49,12 +47,12 @@ type SearchResult struct {
 	Words     []string      `json:"words,omitempty"`     //搜索关键词
 }
 
-// type SearchPictureResult struct {
-// 	Time      float32       `json:"time,omitempty"`      //查询用时
-// 	Total     int           `json:"total"`               //总数
-// 	PageCount int           `json:"pageCount"`           //总页数
-// 	Page      int           `json:"page,omitempty"`      //页码
-// 	Limit     int           `json:"limit,omitempty"`     //页大小
-// 	Documents []ResponseUrl `json:"documents,omitempty"` //缩略图 Url
-// 	Words     []string      `json:"words,omitempty"`     //搜索关键词
-// }
+type PutRequest struct {
+	Text string `json:"text,omitempty"`
+	Url  string `json:"url,omitempty"`
+}
+
+type PutResponse struct {
+	Code int    `json:"code,omitempty"`
+	Msg  string `json:"msg,omitempty"`
+}
