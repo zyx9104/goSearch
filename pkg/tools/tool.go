@@ -15,7 +15,8 @@ import (
 	"github.com/spaolacci/murmur3"
 	"github.com/spf13/viper"
 	"github.com/wangbin/jiebago"
-	"github.com/z-y-x233/goSearch/pkg/logger"
+
+	log1 "github.com/z-y-x233/goSearch/pkg/log"
 )
 
 var (
@@ -30,17 +31,17 @@ func Init() {
 	if err != nil {
 		log.Fatal("load config failed:", err)
 	}
-	err = logger.Init()
+	err = log1.Init()
 	if err != nil {
 		log.Fatal("init logger failed:", err)
 	}
 
-	logger.Infoln("Load dict")
+	log1.Infoln("Load dict")
 	dictPath := viper.GetString("db.dict")
 	err = Seg.LoadDictionary(dictPath)
 	HandleError(fmt.Sprintf("load %s failed:", dictPath), err)
 
-	logger.Infoln("Load Word Ids")
+	log1.Infoln("Load Word Ids")
 	WordIds = make(map[uint64]int, 16000000)
 	wordIdsPath := viper.GetString("db.wordIds")
 	LoadWordIds(wordIdsPath)
@@ -135,15 +136,15 @@ func U64ToBytes(key uint64) []byte {
 	return buf
 }
 
-//ReadCsv return [[url, text], ...]
+// ReadCsv return [[url, text], ...]
 func ReadCsv(filepath string) [][]string {
 	opencast, err := os.Open(filepath)
 	if err != nil {
-		logger.Panicln(filepath, err)
+		log1.Panicln(filepath, err)
 	}
 	defer opencast.Close()
 
-	logger.Debug("load:", filepath)
+	log1.Debug("load:", filepath)
 	ReadCsv := csv.NewReader(opencast)
 	// ReadCsv.Comma = ' '
 	// ReadCsv.FieldsPerRecord = -1
@@ -151,14 +152,14 @@ func ReadCsv(filepath string) [][]string {
 	ReadCsv.Read()
 	ReadAll, err := ReadCsv.ReadAll() //返回切片类型：[[s s ds] [a a a]]
 	if err != nil {
-		logger.Panicln(filepath, err)
+		log1.Panicln(filepath, err)
 	}
 	return ReadAll
 }
 
 func HandleError(msg string, err error) {
 	if err != nil {
-		logger.Panicln(msg, err)
+		log1.Panicln(msg, err)
 	}
 }
 
@@ -205,7 +206,7 @@ func WriteBytes(data []byte, filename string) error {
 	if err != nil {
 		return err
 	}
-	logger.Debugln("write", len(data), "bytes to", filename)
+	log1.Debugln("write", len(data), "bytes to", filename)
 	return nil
 }
 
@@ -215,6 +216,6 @@ func ReadBytes(filename string) (data []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Debugln("read", len(data), "bytes from", filename)
+	log1.Debugln("read", len(data), "bytes from", filename)
 	return data, nil
 }

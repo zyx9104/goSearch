@@ -9,19 +9,20 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/z-y-x233/goSearch/pkg/db"
 	"github.com/z-y-x233/goSearch/pkg/engine"
-	"github.com/z-y-x233/goSearch/pkg/logger"
+	"github.com/z-y-x233/goSearch/pkg/log"
 	"github.com/z-y-x233/goSearch/pkg/proto/pb"
 	"github.com/z-y-x233/goSearch/pkg/tools"
 	"github.com/z-y-x233/goSearch/pkg/tree"
-	"google.golang.org/protobuf/proto"
 )
 
 func BuildInvIdx(start, end, id int) {
 
-	logger.Infoln("===========================start build===================================")
-	logger.Infoln("start:", start, "end:", end)
+	log.Infoln("===========================start build===================================")
+	log.Infoln("start:", start, "end:", end)
 
 	// e := engine.DefaultEngine()
 	o := engine.DefaultOptions()
@@ -40,7 +41,7 @@ func BuildInvIdx(start, end, id int) {
 	}
 	docData := docReader.GetData()
 
-	logger.Infof("from %v to %v, read time: %v", start, end, time.Since(b))
+	log.Infof("from %v to %v, read time: %v", start, end, time.Since(b))
 
 	invMap := make(map[uint64][]*pb.InvItem, 1000000)
 	parseDoc := func(doc *pb.DocIndex) {
@@ -54,7 +55,7 @@ func BuildInvIdx(start, end, id int) {
 			invMap[key] = append(invMap[key], &pb.InvItem{Id: doc.Id, Cnt: int32(cnt)})
 		}
 	}
-	logger.Infoln("Start parse doc")
+	log.Infoln("Start parse doc")
 	dt := time.Now()
 	cnt := 0
 	totalData := 0
@@ -68,7 +69,7 @@ func BuildInvIdx(start, end, id int) {
 		if cnt == 100000 {
 			totalData += 100000
 			totalTime += time.Since(t)
-			logger.Infof(
+			log.Infof(
 				"parse 10w data, total time: %v, total data: %v, parse time: %v, per time: %v, avg time: %v",
 				totalTime, totalData, time.Since(t), time.Since(t)/time.Duration(100000), totalTime/time.Duration(totalData),
 			)
@@ -76,9 +77,9 @@ func BuildInvIdx(start, end, id int) {
 			t = time.Now()
 		}
 	}
-	logger.Infoln("Parse doc time:", time.Since(dt))
+	log.Infoln("Parse doc time:", time.Since(dt))
 
-	logger.Infoln("Start write inv index")
+	log.Infoln("Start write inv index")
 	invWriter := engine.NewBufWriter(e.InvDB)
 	invWriter.Start()
 
@@ -92,8 +93,8 @@ func BuildInvIdx(start, end, id int) {
 		delete(invMap, k)
 	}
 	invWriter.Wait()
-	logger.Infof("write time: %v", time.Since(wt))
-	logger.Infoln("===========================build inv index done===================================")
+	log.Infof("write time: %v", time.Since(wt))
+	log.Infoln("===========================build inv index done===================================")
 }
 
 func MergeIndex() {
@@ -124,7 +125,7 @@ func MergeIndex() {
 			}
 		}
 		invWriter.Wait()
-		logger.Infoln("merge", i, "done", "time:", time.Since(t))
+		log.Infoln("merge", i, "done", "time:", time.Since(t))
 		t = time.Now()
 		invWriter.Start()
 	}
@@ -143,7 +144,7 @@ func GenWordIds() {
 			proto.Unmarshal(bytes, inv)
 			wc[inv.Key] = len(inv.Items)
 		}
-		logger.Infoln("bucket", i, "done")
+		log.Infoln("bucket", i, "done")
 	}
 	file, _ := os.OpenFile("./pkg/data/word_ids.txt", os.O_CREATE|os.O_RDWR, 0664)
 	wt := bufio.NewWriter(file)
@@ -168,13 +169,13 @@ func GenSearchHistory() {
 	t := time.Now()
 	docs := e.GetDocsByUid(ids)
 	cnt := 0
-	logger.Info("get docs time:", time.Since(t))
+	log.Info("get docs time:", time.Since(t))
 	t = time.Now()
 	for _, doc := range docs {
 		tr.Insert(doc.Text)
 		cnt++
 		if cnt == buf {
-			logger.Debugln("insert", cnt, "query", "insert time:", time.Since(t))
+			log.Debugln("insert", cnt, "query", "insert time:", time.Since(t))
 			t = time.Now()
 			cnt = 0
 		}
@@ -185,5 +186,5 @@ func GenSearchHistory() {
 	// 	logger.Debug(line)
 	// }
 	tr.Save(filenema)
-	logger.Info("save time: ", time.Since(t))
+	log.Info("save time: ", time.Since(t))
 }

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/z-y-x233/goSearch/pkg/db"
-	"github.com/z-y-x233/goSearch/pkg/logger"
+	"github.com/z-y-x233/goSearch/pkg/log"
 )
 
 type BufReader struct {
@@ -47,7 +47,7 @@ func (r *BufReader) Start(readBufSize, objBufSize int) {
 		for len := range r.debugCh {
 			total += len
 			totalTime += time.Since(t)
-			logger.Debugf(
+			log.Debugf(
 				"read %v data, total data: %v, read time: %v, per time: %v, total time: %v, avg time: %v",
 				len, total, time.Since(t), time.Since(t)/time.Duration(len), totalTime, totalTime/time.Duration(total),
 			)
@@ -90,7 +90,7 @@ func (r *BufReader) GetData() (res [][]byte) {
 		r.objWg.Done()
 		res = append(res, item)
 	}
-	logger.Debugf("get data time: %v", time.Since(tt))
+	log.Debugf("get data time: %v", time.Since(tt))
 	return res
 }
 
@@ -153,7 +153,7 @@ func (w *BufWriter) Start() {
 		for len := range w.debugCh {
 			total += len
 			totalTime += time.Since(t)
-			logger.Debugf(
+			log.Debugf(
 				"write %v data, total data: %v, write time: %v, per time: %v, total time: %v, avg time: %v",
 				len, total, time.Since(t), time.Since(t)/time.Duration(len), totalTime, totalTime/time.Duration(total),
 			)

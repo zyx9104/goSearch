@@ -1,20 +1,18 @@
-package logger
+package log
 
 import (
 	"bufio"
 	"errors"
-
-	rotateLogs "github.com/lestrrat/go-file-rotatelogs"
-	"github.com/rifflock/lfshook"
-
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
-	prefixed "github.com/x-cray/logrus-prefixed-formatter"
-
 	"io"
 	"os"
 	"path"
 	"time"
+
+	rotateLogs "github.com/lestrrat/go-file-rotatelogs"
+	"github.com/rifflock/lfshook"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
+	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 )
 
 var (

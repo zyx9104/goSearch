@@ -5,10 +5,11 @@ import (
 	"os/signal"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/z-y-x233/goSearch/api"
 	"github.com/z-y-x233/goSearch/handler"
 	"github.com/z-y-x233/goSearch/pkg/engine"
-	"github.com/z-y-x233/goSearch/pkg/logger"
+	"github.com/z-y-x233/goSearch/pkg/log"
 	"github.com/z-y-x233/goSearch/pkg/tools"
 	"github.com/z-y-x233/goSearch/pkg/tree"
 )
@@ -35,13 +36,13 @@ func close() {
 
 func main() {
 	defer close()
-	logger.Infoln("========================== Process Start ==========================")
+	log.Infoln("========================== Process Start ==========================")
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	gin.SetMode(gin.ReleaseMode)
 	go g.Run(":8080")
 	<-c
-	logger.Infoln("========================== Process Done ==========================")
-	logger.Infoln("========================== Save Data ==========================")
+	log.Infoln("========================== Process Done ==========================")
+	log.Infoln("========================== Save Data ==========================")
 
 }

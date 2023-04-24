@@ -2,7 +2,8 @@ package tree
 
 import (
 	"github.com/spf13/viper"
-	"github.com/z-y-x233/goSearch/pkg/logger"
+
+	"github.com/z-y-x233/goSearch/pkg/log"
 )
 
 var (
@@ -13,13 +14,13 @@ var (
 func Init() {
 	trie = NewTrie()
 	filepath = viper.GetString("db.searchHistory")
-	logger.Infoln("Load History Search")
+	log.Infoln("Load History Search")
 	trie.LoadData(filepath)
 }
 
 func Close() {
-	logger.Infoln("Close Trie")
-	logger.Infoln("Save Data to", filepath)
+	log.Infoln("Close Trie")
+	log.Infoln("Save Data to", filepath)
 	trie.Save(filepath)
 }
 

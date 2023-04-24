@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/z-y-x233/goSearch/pkg/db"
-	"github.com/z-y-x233/goSearch/pkg/logger"
+	"github.com/z-y-x233/goSearch/pkg/log"
 	"github.com/z-y-x233/goSearch/pkg/model"
 	"github.com/z-y-x233/goSearch/pkg/proto/pb"
 	"github.com/z-y-x233/goSearch/pkg/tools"
 	"github.com/z-y-x233/goSearch/pkg/tree"
-	"google.golang.org/protobuf/proto"
 )
 
 type Engine struct {
@@ -79,9 +80,9 @@ func NewEngine(option *Options) *Engine {
 		e   *Engine = &Engine{}
 		err error
 	)
-	logger.Infoln("========================== Init Engine ==========================")
-	logger.Infoln("Options:", option)
-	logger.Infoln("========================== open database ==========================")
+	log.Infoln("========================== Init Engine ==========================")
+	log.Infoln("Options:", option)
+	log.Infoln("========================== open database ==========================")
 	e.wg = sync.WaitGroup{}
 	e.wg.Add(1)
 
@@ -108,13 +109,13 @@ func NewEngine(option *Options) *Engine {
 		}
 	}
 
-	logger.Infoln("========================== Init Done ==========================")
+	log.Infoln("========================== Init Done ==========================")
 	e.wg.Done()
 	return e
 }
 
 func (e *Engine) Close() {
-	logger.Infoln("Close Database")
+	log.Infoln("Close Database")
 	e.InvDB.Close()
 	e.DocDB.Close()
 }
@@ -180,7 +181,7 @@ func (e *Engine) Query(q string) (res model.Docs) {
 	words := tools.WordCut(q)
 	wordMap := make(map[uint64]*pb.InvIndex, len(words))
 	invChan := make(chan *pb.InvIndex, 20)
-	logger.Infoln(words)
+	log.Infoln(words)
 	tt := time.Now()
 	t := time.Now()
 	var wg sync.WaitGroup
@@ -215,22 +216,22 @@ func (e *Engine) Query(q string) (res model.Docs) {
 		}
 	}
 	st := time.Since(t)
-	logger.Infoln("total time:", time.Since(tt), "find time:", parseTime, "find docs:", len(docScore), "stat time:", st)
+	log.Infoln("total time:", time.Since(tt), "find time:", parseTime, "find docs:", len(docScore), "stat time:", st)
 	t = time.Now()
-	logger.Infoln("Start cal doc score")
+	log.Infoln("Start cal doc score")
 
 	for _, item := range wordMap {
 		for _, doc := range item.Items {
 			docScore[doc.Id] += tools.IDF(item.Key, len(docScore)) * tools.R(int(doc.Cnt))
 		}
 	}
-	logger.Infoln("Cal score time:", time.Since(t))
+	log.Infoln("Cal score time:", time.Since(t))
 	t = time.Now()
 	for uid, score := range docScore {
 		res = append(res, &model.SliceItem{Id: uid, Score: score})
 	}
 	sort.Sort(res)
-	logger.Infoln("Sort time:", time.Since(t))
+	log.Infoln("Sort time:", time.Since(t))
 	if len(res) > MaxResultSize {
 		res = res[:MaxResultSize]
 	}
@@ -252,7 +253,7 @@ func (e *Engine) Search(q string) []*pb.DocIndex {
 	slices := e.Query(q)
 	t := time.Now()
 	res := e.GetDocs(slices)
-	logger.Infoln("Get docs time:", time.Since(t))
+	log.Infoln("Get docs time:", time.Since(t))
 	return res
 }
 
@@ -263,7 +264,7 @@ func (e *Engine) ParseDoc() {
 	write.Start()
 	t := time.Now()
 	for i := 0; i < BoltBucketSize; i++ {
-		logger.Infoln("parse bucket:", i)
+		log.Infoln("parse bucket:", i)
 		bucketName := tools.U32ToBytes(uint32(i))
 		db2.CreateBucketIfNotExist(bucketName)
 		vals, err := e.InvDB.GetVals(bucketName)
@@ -275,5 +276,5 @@ func (e *Engine) ParseDoc() {
 		}
 	}
 	write.Wait()
-	logger.Infoln("total time:", time.Since(t))
+	log.Infoln("total time:", time.Since(t))
 }

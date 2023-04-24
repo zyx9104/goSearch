@@ -3,7 +3,7 @@ package tree
 import (
 	"container/heap"
 
-	"github.com/z-y-x233/goSearch/pkg/logger"
+	"github.com/z-y-x233/goSearch/pkg/log"
 	"github.com/z-y-x233/goSearch/pkg/tools"
 )
 
@@ -92,14 +92,14 @@ func (t *Trie) RelatedSearch(q string, num int) (res []Search) {
 	if u == nil {
 		return
 	}
-	logger.Debug("find node!")
+	log.Debug("find node!")
 	for _, word := range words {
 		wordMap[word] = true
 	}
-	logger.Debug("walk start!")
+	log.Debug("walk start!")
 
 	t.Walk(u, wordMap, []byte(q), ch)
-	logger.Debug("walk done!")
+	log.Debug("walk done!")
 
 	close(ch)
 	h := NewMaxHeap()
